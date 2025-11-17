@@ -2,8 +2,8 @@
 
 pragma solidity ^0.8.28;
 
-import { IJackpotTicketNFT } from "../interfaces/IJackpotTicketNFT.sol";
-import { JackpotLPManager } from "../JackpotLPManager.sol";
+import {IJackpotTicketNFT} from "../interfaces/IJackpotTicketNFT.sol";
+import {JackpotLPManager} from "../JackpotLPManager.sol";
 
 contract MockJackpot {
     // State variables to store return values from LP Manager functions
@@ -21,13 +21,7 @@ contract MockJackpot {
         uint256 packedTicket,
         bytes32 referralScheme
     ) external {
-        IJackpotTicketNFT(nftContract).mintTicket(
-            recipient,
-            ticketId,
-            drawingId,
-            packedTicket,
-            referralScheme
-        );
+        IJackpotTicketNFT(nftContract).mintTicket(recipient, ticketId, drawingId, packedTicket, referralScheme);
     }
 
     function burnTicket(address nftContract, uint256 ticketId) external {
@@ -39,29 +33,17 @@ contract MockJackpot {
         JackpotLPManager(lpManager).initializeLP();
     }
 
-    function processDeposit(
-        address lpManager,
-        uint256 drawingId,
-        address lpAddress,
-        uint256 amount
-    ) external {
+    function processDeposit(address lpManager, uint256 drawingId, address lpAddress, uint256 amount) external {
         JackpotLPManager(lpManager).processDeposit(drawingId, lpAddress, amount);
     }
 
-    function processInitiateWithdraw(
-        address lpManager,
-        uint256 drawingId,
-        address lpAddress,
-        uint256 shares
-    ) external {
+    function processInitiateWithdraw(address lpManager, uint256 drawingId, address lpAddress, uint256 shares)
+        external
+    {
         JackpotLPManager(lpManager).processInitiateWithdraw(drawingId, lpAddress, shares);
     }
 
-    function processFinalizeWithdraw(
-        address lpManager,
-        uint256 drawingId,
-        address lpAddress
-    ) external {
+    function processFinalizeWithdraw(address lpManager, uint256 drawingId, address lpAddress) external {
         lastWithdrawableAmount = JackpotLPManager(lpManager).processFinalizeWithdraw(drawingId, lpAddress);
     }
 
@@ -72,41 +54,23 @@ contract MockJackpot {
         uint256 userWinnings,
         uint256 protocolFee
     ) external {
-        (lastNewLPValue, lastNewAccumulator) = JackpotLPManager(lpManager).processDrawingSettlement(
-            drawingId,
-            lpEarnings,
-            userWinnings,
-            protocolFee
-        );
+        (lastNewLPValue, lastNewAccumulator) =
+            JackpotLPManager(lpManager).processDrawingSettlement(drawingId, lpEarnings, userWinnings, protocolFee);
     }
 
-    function initializeDrawingLP(
-        address lpManager,
-        uint256 drawingId,
-        uint256 initialValue
-    ) external {
+    function initializeDrawingLP(address lpManager, uint256 drawingId, uint256 initialValue) external {
         JackpotLPManager(lpManager).initializeDrawingLP(drawingId, initialValue);
     }
 
-    function setLPPoolCap(
-        address lpManager,
-        uint256 drawingId,
-        uint256 cap
-    ) external {
+    function setLPPoolCap(address lpManager, uint256 drawingId, uint256 cap) external {
         JackpotLPManager(lpManager).setLPPoolCap(drawingId, cap);
     }
 
-    function setDrawingId(
-        uint256 drawingId
-    ) external {
+    function setDrawingId(uint256 drawingId) external {
         currentDrawingId = drawingId;
     }
 
-    function emergencyWithdrawLP(
-        address lpManager,
-        uint256 drawingId,
-        address user
-    ) external {
+    function emergencyWithdrawLP(address lpManager, uint256 drawingId, address user) external {
         lastWithdrawableAmount = JackpotLPManager(lpManager).emergencyWithdrawLP(drawingId, user);
     }
 
@@ -119,7 +83,11 @@ contract MockJackpot {
         return (lastNewLPValue, lastNewAccumulator);
     }
 
-    function getUnpackedTicket(uint256 /* drawingId */, uint256 packedTicket) external pure returns (uint8[] memory, uint8) {
+    function getUnpackedTicket(uint256, /* drawingId */ uint256 packedTicket)
+        external
+        pure
+        returns (uint8[] memory, uint8)
+    {
         if (packedTicket == 0) {
             return (new uint8[](0), 0);
         }

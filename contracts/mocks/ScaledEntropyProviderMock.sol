@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.28;
 
-import { IScaledEntropyProvider } from "../interfaces/IScaledEntropyProvider.sol";
+import {IScaledEntropyProvider} from "../interfaces/IScaledEntropyProvider.sol";
 
 contract ScaledEntropyProviderMock is IScaledEntropyProvider {
     struct Request {
@@ -18,11 +18,7 @@ contract ScaledEntropyProviderMock is IScaledEntropyProvider {
     address public callback;
     mapping(uint64 => Request) public pendingRequests;
 
-    constructor(
-        uint256 _fee,
-        address _callback,
-        bytes4 _selector
-    ) {
+    constructor(uint256 _fee, address _callback, bytes4 _selector) {
         fee = _fee;
         callback = _callback;
         selector = _selector;
@@ -33,11 +29,7 @@ contract ScaledEntropyProviderMock is IScaledEntropyProvider {
         SetRequest[] memory _setRequests,
         bytes4 _selector,
         bytes memory _context
-    )
-        external
-        payable
-        returns (uint64 requestId)
-    {   
+    ) external payable returns (uint64 requestId) {
         requestId = uint64(1);
 
         pendingRequests[requestId].callback = msg.sender;
@@ -52,8 +44,9 @@ contract ScaledEntropyProviderMock is IScaledEntropyProvider {
     }
 
     function randomnessCallback(uint256[][] memory _randomNumbers) external {
-        (bool success, bytes memory returnData) = callback.call(abi.encodeWithSelector(selector, bytes32(uint256(1)), _randomNumbers, ""));
-        
+        (bool success, bytes memory returnData) =
+            callback.call(abi.encodeWithSelector(selector, bytes32(uint256(1)), _randomNumbers, ""));
+
         if (!success) {
             // Re-throw the revert reason
             if (returnData.length > 0) {

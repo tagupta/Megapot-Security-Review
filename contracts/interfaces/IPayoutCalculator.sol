@@ -22,6 +22,6 @@ interface IPayoutCalculator {
     ) external returns (uint256);
 
     function setDrawingTierInfo(uint256 _drawingId) external;
-
+    //@note what are tiers here?
     function getTierPayout(uint256 _drawingId, uint256 _tierId) external view returns (uint256);
 }

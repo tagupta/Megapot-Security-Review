@@ -20,3 +20,7 @@ ignition/deployments/chain-31337
 abi/
 
 .claude
+
+/lib
+
+/out

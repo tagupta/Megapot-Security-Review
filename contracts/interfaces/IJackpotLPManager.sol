@@ -3,7 +3,6 @@
 pragma solidity ^0.8.28;
 
 interface IJackpotLPManager {
-
     struct LPDrawingState {
         uint256 lpPoolTotal;
         uint256 pendingDeposits;
@@ -12,16 +11,19 @@ interface IJackpotLPManager {
 
     function processDeposit(uint256 _drawingId, address _lpAddress, uint256 _amount) external;
 
-    function processInitiateWithdraw(uint256 _drawingId, address _lpAddress, uint256 _amountToWithdrawInShares) external;
+    function processInitiateWithdraw(uint256 _drawingId, address _lpAddress, uint256 _amountToWithdrawInShares)
+        external;
 
-    function processFinalizeWithdraw(uint256 _drawingId, address _lpAddress) external returns (uint256 withdrawableAmount);
+    function processFinalizeWithdraw(uint256 _drawingId, address _lpAddress)
+        external
+        returns (uint256 withdrawableAmount);
 
     function processDrawingSettlement(
         uint256 _drawingId,
         uint256 _lpEarnings,
         uint256 _userWinnings,
         uint256 _protocolFeeAmount
-    ) external returns (uint256 newLPValue, uint256 newAccumulator);
+    ) external returns (uint256 newLPValue, uint256 newAccumulator); //@note what is an accumulator?
 
     function emergencyWithdrawLP(uint256 _drawingId, address _user) external returns (uint256 withdrawableAmount);
 

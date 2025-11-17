@@ -1,14 +1,13 @@
 //SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
-import { IJackpot } from "../interfaces/IJackpot.sol";
+import {IJackpot} from "../interfaces/IJackpot.sol";
 
 /**
  * @title ETHRejectingContract
  * @dev A mock contract that can toggle between accepting and rejecting ETH transfers
  */
 contract ETHRejectingContract {
-    
     bool public rejectETH = false;
     address public callbackTarget;
     bytes public callbackData;
@@ -28,7 +27,7 @@ contract ETHRejectingContract {
     function setCallbackData(bytes memory _callbackData) external {
         callbackData = _callbackData;
     }
-    
+
     /**
      * @notice Accept ETH deposits when not in reject mode
      */
@@ -51,18 +50,13 @@ contract ETHRejectingContract {
         }
         // Accept ETH normally when rejectETH is false
     }
-    
+
     /**
      * @notice Call the runJackpot function on behalf of this contract
      * @dev This allows us to test the scenario where runJackpot refund fails
      */
-    function callRunJackpot(
-        address _jackpot,
-        uint256 _value
-    ) external {
-        (bool success, bytes memory returnData) = _jackpot.call{value: _value}(
-            abi.encodeWithSignature("runJackpot()")
-        );
+    function callRunJackpot(address _jackpot, uint256 _value) external {
+        (bool success, bytes memory returnData) = _jackpot.call{value: _value}(abi.encodeWithSignature("runJackpot()"));
 
         // If the call failed, bubble up the original revert reason
         if (!success) {

@@ -44,12 +44,11 @@ library FisherYatesRejection {
      * - Deterministic output for given seed enables verification
      * - Gas usage scales with rejection rate (worst case for biased ranges)
      */
-    function draw(
-        uint256 minRange,
-        uint256 maxRange,
-        uint256 count,
-        uint256 seed
-    ) external pure returns (uint256[] memory result) {
+    function draw(uint256 minRange, uint256 maxRange, uint256 count, uint256 seed)
+        external
+        pure
+        returns (uint256[] memory result)
+    {
         require(count <= maxRange - minRange + 1, "Too many draws");
 
         // Build pool [1, 2, ..., range]

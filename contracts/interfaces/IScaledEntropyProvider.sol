@@ -9,14 +9,12 @@ interface IScaledEntropyProvider {
         uint256 maxRange;
         bool withReplacement;
     }
+
     function requestAndCallbackScaledRandomness(
         uint32 _gasLimit,
         SetRequest[] memory _requests,
         bytes4 _selector,
         bytes memory _context
-    )
-        external
-        payable
-        returns (uint64 requestId);
+    ) external payable returns (uint64 requestId);
     function getFee(uint32 _gasLimit) external view returns (uint256);
 }

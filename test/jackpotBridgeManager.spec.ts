@@ -1,11 +1,8 @@
 import { ethers } from "hardhat";
 import DeployHelper from "@utils/deploys";
 
-import {
-  getWaffleExpect,
-  getAccounts
-} from "@utils/test/index";
-import { ether, usdc } from "@utils/common"
+import { getWaffleExpect, getAccounts } from "@utils/test/index";
+import { ether, usdc } from "@utils/common";
 import { Account } from "@utils/test";
 
 import { PRECISE_UNIT } from "@utils/constants";
@@ -20,7 +17,12 @@ import {
   ReentrantUSDCMock,
   ScaledEntropyProviderMock,
 } from "@utils/contracts";
-import { Address, JackpotSystemFixture, RelayTxData, Ticket } from "@utils/types";
+import {
+  Address,
+  JackpotSystemFixture,
+  RelayTxData,
+  Ticket,
+} from "@utils/types";
 import { deployJackpotSystem } from "@utils/test/jackpotFixture";
 import {
   calculatePackedTicket,
@@ -29,7 +31,11 @@ import {
   generateClaimWinningsSignature,
 } from "@utils/protocolUtils";
 import { ADDRESS_ZERO } from "@utils/constants";
-import { takeSnapshot, SnapshotRestorer, time } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+import {
+  takeSnapshot,
+  SnapshotRestorer,
+  time,
+} from "@nomicfoundation/hardhat-toolbox/network-helpers";
 
 const expect = getWaffleExpect();
 
@@ -61,9 +67,9 @@ describe("JackpotBridgeManager", () => {
       referrerOne,
       referrerTwo,
       referrerThree,
-      solver
+      solver,
     ] = await getAccounts();
-    
+
     jackpotSystem = await deployJackpotSystem();
     jackpot = jackpotSystem.jackpot;
     jackpotNFT = jackpotSystem.jackpotNFT;
@@ -72,30 +78,42 @@ describe("JackpotBridgeManager", () => {
     usdcMock = jackpotSystem.usdcMock;
     entropyProvider = jackpotSystem.entropyProvider;
 
-    await jackpot.connect(owner.wallet).initialize(
+    await jackpot
+      .connect(owner.wallet)
+      .initialize(
         usdcMock.getAddress(),
         await jackpotLPManager.getAddress(),
         await jackpotNFT.getAddress(),
         entropyProvider.getAddress(),
-        await payoutCalculator.getAddress()
-    );
+        await payoutCalculator.getAddress(),
+      );
 
     await jackpot.connect(owner.wallet).initializeLPDeposits(usdc(10000000));
 
-    await usdcMock.connect(owner.wallet).approve(jackpot.getAddress(), usdc(1000000));
+    await usdcMock
+      .connect(owner.wallet)
+      .approve(jackpot.getAddress(), usdc(1000000));
     await jackpot.connect(owner.wallet).lpDeposit(usdc(1000000));
 
-    await jackpot.connect(owner.wallet).initializeJackpot(BigInt(await time.latest()) + BigInt(jackpotSystem.deploymentParams.drawingDurationInSeconds));
+    await jackpot
+      .connect(owner.wallet)
+      .initializeJackpot(
+        BigInt(await time.latest()) +
+          BigInt(jackpotSystem.deploymentParams.drawingDurationInSeconds),
+      );
 
-    jackpotBridgeManager = await jackpotSystem.deployer.deployJackpotBridgeManager(
-      await jackpot.getAddress(),
-      await jackpotNFT.getAddress(),
+    jackpotBridgeManager =
+      await jackpotSystem.deployer.deployJackpotBridgeManager(
+        await jackpot.getAddress(),
+        await jackpotNFT.getAddress(),
+        await usdcMock.getAddress(),
+        "MegapotBridgeManager",
+        "1.0.0",
+      );
+
+    mockDepository = await jackpotSystem.deployer.deployMockDepository(
       await usdcMock.getAddress(),
-      "MegapotBridgeManager",
-      "1.0.0"
     );
-
-    mockDepository = await jackpotSystem.deployer.deployMockDepository(await usdcMock.getAddress());
 
     snapshot = await takeSnapshot();
   });
@@ -107,11 +125,13 @@ describe("JackpotBridgeManager", () => {
   describe("#constructor", async () => {
     it("should set the correct state variables", async () => {
       const actualJackpot = await jackpotBridgeManager.jackpot();
-      const actualJackpotTicketNFT = await jackpotBridgeManager.jackpotTicketNFT();
+      const actualJackpotTicketNFT =
+        await jackpotBridgeManager.jackpotTicketNFT();
       const actualUsdc = await jackpotBridgeManager.usdc();
-      const [, actualName, actualVersion,,,,,] = (await jackpotBridgeManager.eip712Domain());
+      const [, actualName, actualVersion, , , , ,] =
+        await jackpotBridgeManager.eip712Domain();
 
-      expect(actualJackpot).to.equal(await jackpot.getAddress()); 
+      expect(actualJackpot).to.equal(await jackpot.getAddress());
       expect(actualJackpotTicketNFT).to.equal(await jackpotNFT.getAddress());
       expect(actualUsdc).to.equal(await usdcMock.getAddress());
       expect(actualName).to.equal("MegapotBridgeManager");
@@ -128,65 +148,130 @@ describe("JackpotBridgeManager", () => {
     let subjectCaller: Account;
 
     beforeEach(async () => {
-      await usdcMock.connect(owner.wallet).approve(jackpotBridgeManager.getAddress(), usdc(5));
+      await usdcMock
+        .connect(owner.wallet)
+        .approve(jackpotBridgeManager.getAddress(), usdc(5));
 
       subjectTickets = [
-        { normals: [BigInt(1), BigInt(2), BigInt(3), BigInt(4), BigInt(5)], bonusball: BigInt(1) },
-        { normals: [BigInt(6), BigInt(7), BigInt(8), BigInt(9), BigInt(10)], bonusball: BigInt(2) },
+        {
+          normals: [BigInt(1), BigInt(2), BigInt(3), BigInt(4), BigInt(5)],
+          bonusball: BigInt(1),
+        },
+        {
+          normals: [BigInt(6), BigInt(7), BigInt(8), BigInt(9), BigInt(10)],
+          bonusball: BigInt(2),
+        },
       ];
 
       subjectRecipient = buyerOne.address;
-      subjectReferrers = [referrerOne.address, referrerTwo.address, referrerThree.address];
-      subjectReferralSplitBps = [ether(.3333), ether(.3333), ether(.3334)];
+      subjectReferrers = [
+        referrerOne.address,
+        referrerTwo.address,
+        referrerThree.address,
+      ];
+      subjectReferralSplitBps = [ether(0.3333), ether(0.3333), ether(0.3334)];
       subjectSource = ethers.encodeBytes32String("test");
       subjectCaller = owner;
     });
 
     async function subject() {
-      return jackpotBridgeManager.connect(subjectCaller.wallet).buyTickets(
-        subjectTickets,
-        subjectRecipient,
-        subjectReferrers,
-        subjectReferralSplitBps,
-        subjectSource
-      );
+      return jackpotBridgeManager
+        .connect(subjectCaller.wallet)
+        .buyTickets(
+          subjectTickets,
+          subjectRecipient,
+          subjectReferrers,
+          subjectReferralSplitBps,
+          subjectSource,
+        );
     }
 
     it("should update the user's tickets and ticket owner", async () => {
       await subject();
 
-      const userTickets = await jackpotBridgeManager.getUserTickets(buyerOne.address, 1);
+      const userTickets = await jackpotBridgeManager.getUserTickets(
+        buyerOne.address,
+        1,
+      );
       expect(userTickets.length).to.equal(2);
-      expect(userTickets[0]).to.equal(calculateTicketId(1,1, calculatePackedTicket(subjectTickets[0], jackpotSystem.deploymentParams.normalBallMax)));
-      expect(userTickets[1]).to.equal(calculateTicketId(1,2, calculatePackedTicket(subjectTickets[1], jackpotSystem.deploymentParams.normalBallMax)));
+      expect(userTickets[0]).to.equal(
+        calculateTicketId(
+          1,
+          1,
+          calculatePackedTicket(
+            subjectTickets[0],
+            jackpotSystem.deploymentParams.normalBallMax,
+          ),
+        ),
+      );
+      expect(userTickets[1]).to.equal(
+        calculateTicketId(
+          1,
+          2,
+          calculatePackedTicket(
+            subjectTickets[1],
+            jackpotSystem.deploymentParams.normalBallMax,
+          ),
+        ),
+      );
 
-      const ticketOwner = await jackpotBridgeManager.ticketOwner(userTickets[0]);
+      const ticketOwner = await jackpotBridgeManager.ticketOwner(
+        userTickets[0],
+      );
       expect(ticketOwner).to.equal(buyerOne.address);
 
-      const ticketOwner2 = await jackpotBridgeManager.ticketOwner(userTickets[1]);
+      const ticketOwner2 = await jackpotBridgeManager.ticketOwner(
+        userTickets[1],
+      );
       expect(ticketOwner2).to.equal(buyerOne.address);
     });
 
     it("should set the BridgeManager as the ticket owner on the Jackpot contract", async () => {
       await subject();
 
-      const ticketOwner = await jackpotNFT.ownerOf(calculateTicketId(1,1, calculatePackedTicket(subjectTickets[0], jackpotSystem.deploymentParams.normalBallMax)));
+      const ticketOwner = await jackpotNFT.ownerOf(
+        calculateTicketId(
+          1,
+          1,
+          calculatePackedTicket(
+            subjectTickets[0],
+            jackpotSystem.deploymentParams.normalBallMax,
+          ),
+        ),
+      );
       expect(ticketOwner).to.equal(await jackpotBridgeManager.getAddress());
 
-      const ticketOwner2 = await jackpotNFT.ownerOf(calculateTicketId(1,2, calculatePackedTicket(subjectTickets[1], jackpotSystem.deploymentParams.normalBallMax)));
+      const ticketOwner2 = await jackpotNFT.ownerOf(
+        calculateTicketId(
+          1,
+          2,
+          calculatePackedTicket(
+            subjectTickets[1],
+            jackpotSystem.deploymentParams.normalBallMax,
+          ),
+        ),
+      );
       expect(ticketOwner2).to.equal(await jackpotBridgeManager.getAddress());
     });
 
     it("should correctly transfer the USDC from the buyer to the jackpot contract via the manager", async () => {
       const preBuyerBalance = await usdcMock.balanceOf(owner.address);
-      const preManagerBalance = await usdcMock.balanceOf(jackpotBridgeManager.getAddress());
-      const preJackpotBalance = await usdcMock.balanceOf(await jackpot.getAddress());
+      const preManagerBalance = await usdcMock.balanceOf(
+        jackpotBridgeManager.getAddress(),
+      );
+      const preJackpotBalance = await usdcMock.balanceOf(
+        await jackpot.getAddress(),
+      );
 
       await subject();
-      
+
       const postBuyerBalance = await usdcMock.balanceOf(owner.address);
-      const postManagerBalance = await usdcMock.balanceOf(jackpotBridgeManager.getAddress());
-      const postJackpotBalance = await usdcMock.balanceOf(await jackpot.getAddress());
+      const postManagerBalance = await usdcMock.balanceOf(
+        jackpotBridgeManager.getAddress(),
+      );
+      const postJackpotBalance = await usdcMock.balanceOf(
+        await jackpot.getAddress(),
+      );
 
       expect(postBuyerBalance).to.eq(preBuyerBalance - usdc(2));
       expect(postManagerBalance).to.eq(preManagerBalance);
@@ -194,14 +279,26 @@ describe("JackpotBridgeManager", () => {
     });
 
     it("should emit the correct TicketsBought event", async () => {
-      await expect(subject()).to.emit(jackpotBridgeManager, "TicketsBought").withArgs(
-        subjectRecipient,
-        1,
-        [
-          calculateTicketId(1,1, calculatePackedTicket(subjectTickets[0], jackpotSystem.deploymentParams.normalBallMax)),
-          calculateTicketId(1,2, calculatePackedTicket(subjectTickets[1], jackpotSystem.deploymentParams.normalBallMax))
-        ]
-      );
+      await expect(subject())
+        .to.emit(jackpotBridgeManager, "TicketsBought")
+        .withArgs(subjectRecipient, 1, [
+          calculateTicketId(
+            1,
+            1,
+            calculatePackedTicket(
+              subjectTickets[0],
+              jackpotSystem.deploymentParams.normalBallMax,
+            ),
+          ),
+          calculateTicketId(
+            1,
+            2,
+            calculatePackedTicket(
+              subjectTickets[1],
+              jackpotSystem.deploymentParams.normalBallMax,
+            ),
+          ),
+        ]);
     });
 
     describe("when no recipient is provided", async () => {
@@ -210,13 +307,18 @@ describe("JackpotBridgeManager", () => {
       });
 
       it("should revert", async () => {
-        await expect(subject()).to.be.revertedWithCustomError(jackpotBridgeManager, "ZeroAddress");
+        await expect(subject()).to.be.revertedWithCustomError(
+          jackpotBridgeManager,
+          "ZeroAddress",
+        );
       });
     });
 
     describe("when the reentrancy protection is violated", async () => {
       beforeEach(async () => {
-        await usdcMock.setCallbackTarget(await jackpotBridgeManager.getAddress());
+        await usdcMock.setCallbackTarget(
+          await jackpotBridgeManager.getAddress(),
+        );
         const callbackData = jackpotBridgeManager.interface.encodeFunctionData(
           "buyTickets",
           [
@@ -224,19 +326,23 @@ describe("JackpotBridgeManager", () => {
             subjectRecipient,
             subjectReferrers,
             subjectReferralSplitBps,
-            subjectSource
-          ]
+            subjectSource,
+          ],
         );
         await usdcMock.setCallbackData(callbackData);
         await usdcMock.enableCallback();
       });
 
       it("should revert", async () => {
-        await expect(subject()).to.be.revertedWithCustomError(jackpotBridgeManager, "ReentrancyGuardReentrantCall");
+        await expect(subject()).to.be.revertedWithCustomError(
+          jackpotBridgeManager,
+          "ReentrancyGuardReentrantCall",
+        );
       });
     });
   });
 
+  //@audit-poc
   describe("#claimWinnings", async () => {
     let subjectUserTicketIds: bigint[];
     let subjectBridgeDetails: RelayTxData;
@@ -245,43 +351,71 @@ describe("JackpotBridgeManager", () => {
     let expectedUserWinnings: bigint;
 
     beforeEach(async () => {
-      await usdcMock.connect(owner.wallet).approve(jackpotBridgeManager.getAddress(), usdc(5));
-      
+      await usdcMock
+        .connect(owner.wallet)
+        .approve(jackpotBridgeManager.getAddress(), usdc(5));
+
       const tickets: Ticket[] = [
-        { normals: [BigInt(1), BigInt(2), BigInt(3), BigInt(4), BigInt(5)], bonusball: BigInt(1) },
-        { normals: [BigInt(6), BigInt(7), BigInt(8), BigInt(9), BigInt(10)], bonusball: BigInt(2) },
-        { normals: [BigInt(6), BigInt(7), BigInt(8), BigInt(9), BigInt(10)], bonusball: BigInt(3) },
+        {
+          normals: [BigInt(1), BigInt(2), BigInt(3), BigInt(4), BigInt(5)],
+          bonusball: BigInt(1),
+        },
+        {
+          normals: [BigInt(6), BigInt(7), BigInt(8), BigInt(9), BigInt(10)],
+          bonusball: BigInt(2),
+        },
+        {
+          normals: [BigInt(6), BigInt(7), BigInt(8), BigInt(9), BigInt(10)],
+          bonusball: BigInt(3),
+        },
       ];
       const recipient = buyerOne.address;
       const referrers: Address[] = [];
       const referralSplitBps: bigint[] = [];
       const source = ethers.encodeBytes32String("test");
-      
-      const ticketIds = await jackpotBridgeManager.connect(owner.wallet).buyTickets.staticCall(
-        tickets,
-        recipient,
-        referrers,
-        referralSplitBps,
-        source
-      );
 
-      await jackpotBridgeManager.connect(owner.wallet).buyTickets(
-        tickets,
-        recipient,
-        referrers,
-        referralSplitBps,
-        source
-      );
+      const ticketIds = await jackpotBridgeManager
+        .connect(owner.wallet)
+        .buyTickets.staticCall(
+          tickets,
+          recipient,
+          referrers,
+          referralSplitBps,
+          source,
+        );
 
-      await time.increase(jackpotSystem.deploymentParams.drawingDurationInSeconds + BigInt(1));
+      await jackpotBridgeManager
+        .connect(owner.wallet)
+        .buyTickets(tickets, recipient, referrers, referralSplitBps, source);
+
+      await time.increase(
+        jackpotSystem.deploymentParams.drawingDurationInSeconds + BigInt(1),
+      );
       const drawingState = await jackpot.getDrawingState(1);
-      await jackpot.connect(owner.wallet).runJackpot(
-        { value: jackpotSystem.deploymentParams.entropyFee + ((jackpotSystem.deploymentParams.entropyBaseGasLimit + jackpotSystem.deploymentParams.entropyVariableGasLimit * drawingState.bonusballMax) * BigInt(1e7)) }
-      );
-      await entropyProvider.connect(owner.wallet).randomnessCallback([[BigInt(1), BigInt(2), BigInt(3), BigInt(4), BigInt(5)], [BigInt(2)]]);
+      await jackpot
+        .connect(owner.wallet)
+        .runJackpot({
+          value:
+            jackpotSystem.deploymentParams.entropyFee +
+            (jackpotSystem.deploymentParams.entropyBaseGasLimit +
+              jackpotSystem.deploymentParams.entropyVariableGasLimit *
+                drawingState.bonusballMax) *
+              BigInt(1e7),
+        });
+      await entropyProvider
+        .connect(owner.wallet)
+        .randomnessCallback([
+          [BigInt(1), BigInt(2), BigInt(3), BigInt(4), BigInt(5)],
+          [BigInt(2)],
+        ]);
 
-      const rawUserWinnings = (await payoutCalculator.getTierPayout(1, 1)) + (await payoutCalculator.getTierPayout(1, 10));
-      expectedUserWinnings = rawUserWinnings * (PRECISE_UNIT - jackpotSystem.deploymentParams.referralWinShare) / PRECISE_UNIT;
+      const rawUserWinnings =
+        (await payoutCalculator.getTierPayout(1, 1)) +
+        (await payoutCalculator.getTierPayout(1, 10));
+      expectedUserWinnings =
+        (rawUserWinnings *
+          (PRECISE_UNIT - jackpotSystem.deploymentParams.referralWinShare)) /
+        PRECISE_UNIT;
       subjectUserTicketIds = [...ticketIds]; // Create a mutable copy
       subjectBridgeDetails = {
         approveTo: await mockDepository.getAddress(),
@@ -290,97 +424,121 @@ describe("JackpotBridgeManager", () => {
           await jackpotBridgeManager.getAddress(),
           await usdcMock.getAddress(),
           expectedUserWinnings,
-          ethers.encodeBytes32String("test")
-        ])
+          ethers.encodeBytes32String("test"),
+        ]),
       };
 
       subjectSignature = await generateClaimWinningsSignature(
         await jackpotBridgeManager.getAddress(),
         subjectUserTicketIds,
         subjectBridgeDetails,
-        buyerOne.wallet
+        buyerOne.wallet,
       );
     });
 
     async function subject() {
-      return await jackpotBridgeManager.connect(owner.wallet).claimWinnings(
-        subjectUserTicketIds,
-        subjectBridgeDetails,
-        subjectSignature
-      );
+      return await jackpotBridgeManager
+        .connect(owner.wallet)
+        .claimWinnings(
+          subjectUserTicketIds,
+          subjectBridgeDetails,
+          subjectSignature,
+        );
     }
 
     it("should transfer tokens from the jackpot contract to the depository contract", async () => {
-      const preJackpotBalance = await usdcMock.balanceOf(await jackpot.getAddress());
-      const preDepositoryBalance = await usdcMock.balanceOf(await mockDepository.getAddress());
+      const preJackpotBalance = await usdcMock.balanceOf(
+        await jackpot.getAddress(),
+      );
+      const preDepositoryBalance = await usdcMock.balanceOf(
+        await mockDepository.getAddress(),
+      );
 
       await subject();
 
-      const postJackpotBalance = await usdcMock.balanceOf(await jackpot.getAddress());
-      const postDepositoryBalance = await usdcMock.balanceOf(await mockDepository.getAddress());
-      expect(postJackpotBalance).to.eq(preJackpotBalance - expectedUserWinnings);
-      expect(postDepositoryBalance).to.eq(preDepositoryBalance + expectedUserWinnings);
+      const postJackpotBalance = await usdcMock.balanceOf(
+        await jackpot.getAddress(),
+      );
+      const postDepositoryBalance = await usdcMock.balanceOf(
+        await mockDepository.getAddress(),
+      );
+      expect(postJackpotBalance).to.eq(
+        preJackpotBalance - expectedUserWinnings,
+      );
+      expect(postDepositoryBalance).to.eq(
+        preDepositoryBalance + expectedUserWinnings,
+      );
     });
 
     it("should emit the correct WinningsClaimed event", async () => {
-      await expect(subject()).to.emit(jackpotBridgeManager, "WinningsClaimed").withArgs(
-        buyerOne.address,
-        await mockDepository.getAddress(),
-        subjectUserTicketIds,
-        expectedUserWinnings
-      );
+      await expect(subject())
+        .to.emit(jackpotBridgeManager, "WinningsClaimed")
+        .withArgs(
+          buyerOne.address,
+          await mockDepository.getAddress(),
+          subjectUserTicketIds,
+          expectedUserWinnings,
+        );
     });
 
     it("should emit the correct FundsBridged event", async () => {
-      await expect(subject()).to.emit(jackpotBridgeManager, "FundsBridged").withArgs(
-        await mockDepository.getAddress(),
-        expectedUserWinnings
-      );
+      await expect(subject())
+        .to.emit(jackpotBridgeManager, "FundsBridged")
+        .withArgs(await mockDepository.getAddress(), expectedUserWinnings);
     });
 
     describe("when the the amount is bridged via a direct xfer to a solver", async () => {
       beforeEach(async () => {
         subjectBridgeDetails.to = await usdcMock.getAddress();
         subjectBridgeDetails.approveTo = ADDRESS_ZERO;
-        subjectBridgeDetails.data = usdcMock.interface.encodeFunctionData("transfer", [
-          solver.address,
-          expectedUserWinnings
-        ]);
+        subjectBridgeDetails.data = usdcMock.interface.encodeFunctionData(
+          "transfer",
+          [solver.address, expectedUserWinnings],
+        );
 
         subjectSignature = await generateClaimWinningsSignature(
           await jackpotBridgeManager.getAddress(),
           subjectUserTicketIds,
           subjectBridgeDetails,
-          buyerOne.wallet
+          buyerOne.wallet,
         );
       });
 
       it("should transfer tokens from the jackpot contract to the depository contract", async () => {
-        const preJackpotBalance = await usdcMock.balanceOf(await jackpot.getAddress());
+        const preJackpotBalance = await usdcMock.balanceOf(
+          await jackpot.getAddress(),
+        );
         const preSolverBalance = await usdcMock.balanceOf(solver.address);
-  
+
         await subject();
-  
-        const postJackpotBalance = await usdcMock.balanceOf(await jackpot.getAddress());
+
+        const postJackpotBalance = await usdcMock.balanceOf(
+          await jackpot.getAddress(),
+        );
         const postSolverBalance = await usdcMock.balanceOf(solver.address);
-        expect(postJackpotBalance).to.eq(preJackpotBalance - expectedUserWinnings);
-        expect(postSolverBalance).to.eq(preSolverBalance + expectedUserWinnings);
+        expect(postJackpotBalance).to.eq(
+          preJackpotBalance - expectedUserWinnings,
+        );
+        expect(postSolverBalance).to.eq(
+          preSolverBalance + expectedUserWinnings,
+        );
       });
-  
+
       it("should emit the correct WinningsClaimed event", async () => {
-        await expect(subject()).to.emit(jackpotBridgeManager, "WinningsClaimed").withArgs(
-          buyerOne.address,
-          await usdcMock.getAddress(),
-          subjectUserTicketIds,
-          expectedUserWinnings
-        );
+        await expect(subject())
+          .to.emit(jackpotBridgeManager, "WinningsClaimed")
+          .withArgs(
+            buyerOne.address,
+            await usdcMock.getAddress(),
+            subjectUserTicketIds,
+            expectedUserWinnings,
+          );
       });
-  
+
       it("should emit the correct FundsBridged event", async () => {
-        await expect(subject()).to.emit(jackpotBridgeManager, "FundsBridged").withArgs(
-          await usdcMock.getAddress(),
-          expectedUserWinnings
-        );
+        await expect(subject())
+          .to.emit(jackpotBridgeManager, "FundsBridged")
+          .withArgs(await usdcMock.getAddress(), expectedUserWinnings);
       });
     });
 
@@ -392,57 +550,72 @@ describe("JackpotBridgeManager", () => {
           await jackpotBridgeManager.getAddress(),
           subjectUserTicketIds,
           subjectBridgeDetails,
-          buyerOne.wallet
+          buyerOne.wallet,
         );
       });
 
       it("should revert", async () => {
-        await expect(subject()).to.be.revertedWithCustomError(jackpotBridgeManager, "BridgeFundsFailed");
+        await expect(subject()).to.be.revertedWithCustomError(
+          jackpotBridgeManager,
+          "BridgeFundsFailed",
+        );
       });
     });
 
     describe("when the full amount of winnings is not bridged", async () => {
       beforeEach(async () => {
-        subjectBridgeDetails.data = mockDepository.interface.encodeFunctionData("depositErc20", [
-          await jackpotBridgeManager.getAddress(),
-          await usdcMock.getAddress(),
-          expectedUserWinnings - usdc(1),
-          ethers.encodeBytes32String("test")
-        ]);
+        subjectBridgeDetails.data = mockDepository.interface.encodeFunctionData(
+          "depositErc20",
+          [
+            await jackpotBridgeManager.getAddress(),
+            await usdcMock.getAddress(),
+            expectedUserWinnings - usdc(1),
+            ethers.encodeBytes32String("test"),
+          ],
+        );
 
         subjectSignature = await generateClaimWinningsSignature(
           await jackpotBridgeManager.getAddress(),
           subjectUserTicketIds,
           subjectBridgeDetails,
-          buyerOne.wallet
+          buyerOne.wallet,
         );
       });
 
       it("should revert", async () => {
-        await expect(subject()).to.be.revertedWithCustomError(jackpotBridgeManager, "NotAllFundsBridged");
+        await expect(subject()).to.be.revertedWithCustomError(
+          jackpotBridgeManager,
+          "NotAllFundsBridged",
+        );
       });
     });
 
     describe("when the claimed amount is zero", async () => {
       beforeEach(async () => {
-        subjectBridgeDetails.data = mockDepository.interface.encodeFunctionData("depositErc20", [
-          await jackpotBridgeManager.getAddress(),
-          await usdcMock.getAddress(),
-          expectedUserWinnings - usdc(1),
-          ethers.encodeBytes32String("test")
-        ]);
+        subjectBridgeDetails.data = mockDepository.interface.encodeFunctionData(
+          "depositErc20",
+          [
+            await jackpotBridgeManager.getAddress(),
+            await usdcMock.getAddress(),
+            expectedUserWinnings - usdc(1),
+            ethers.encodeBytes32String("test"),
+          ],
+        );
 
         subjectUserTicketIds = [subjectUserTicketIds[2]];
         subjectSignature = await generateClaimWinningsSignature(
           await jackpotBridgeManager.getAddress(),
           subjectUserTicketIds,
           subjectBridgeDetails,
-          buyerOne.wallet
+          buyerOne.wallet,
         );
       });
 
       it("should revert", async () => {
-        await expect(subject()).to.be.revertedWithCustomError(jackpotBridgeManager, "InvalidClaimedAmount");
+        await expect(subject()).to.be.revertedWithCustomError(
+          jackpotBridgeManager,
+          "InvalidClaimedAmount",
+        );
       });
     });
 
@@ -452,12 +625,15 @@ describe("JackpotBridgeManager", () => {
           await jackpotBridgeManager.getAddress(),
           subjectUserTicketIds,
           subjectBridgeDetails,
-          buyerTwo.wallet
+          buyerTwo.wallet,
         );
       });
 
       it("should revert", async () => {
-        await expect(subject()).to.be.revertedWithCustomError(jackpotBridgeManager, "NotTicketOwner");
+        await expect(subject()).to.be.revertedWithCustomError(
+          jackpotBridgeManager,
+          "NotTicketOwner",
+        );
       });
     });
 
@@ -468,32 +644,36 @@ describe("JackpotBridgeManager", () => {
           await jackpotBridgeManager.getAddress(),
           subjectUserTicketIds,
           subjectBridgeDetails,
-          buyerTwo.wallet
+          buyerTwo.wallet,
         );
       });
 
       it("should revert", async () => {
-        await expect(subject()).to.be.revertedWithCustomError(jackpotBridgeManager, "NoTicketsToClaim");
+        await expect(subject()).to.be.revertedWithCustomError(
+          jackpotBridgeManager,
+          "NoTicketsToClaim",
+        );
       });
     });
 
     describe("when the reentrancy protection is violated", async () => {
       beforeEach(async () => {
-        await usdcMock.setCallbackTarget(await jackpotBridgeManager.getAddress());
+        await usdcMock.setCallbackTarget(
+          await jackpotBridgeManager.getAddress(),
+        );
         const callbackData = jackpotBridgeManager.interface.encodeFunctionData(
           "claimWinnings",
-          [
-            subjectUserTicketIds,
-            subjectBridgeDetails,
-            subjectSignature
-          ]
+          [subjectUserTicketIds, subjectBridgeDetails, subjectSignature],
         );
         await usdcMock.setCallbackData(callbackData);
         await usdcMock.enableCallback();
       });
 
       it("should revert", async () => {
-        await expect(subject()).to.be.revertedWithCustomError(jackpotBridgeManager, "ReentrancyGuardReentrantCall");
+        await expect(subject()).to.be.revertedWithCustomError(
+          jackpotBridgeManager,
+          "ReentrancyGuardReentrantCall",
+        );
       });
     });
   });
@@ -504,32 +684,46 @@ describe("JackpotBridgeManager", () => {
     let subjectSignature: string;
 
     beforeEach(async () => {
-      await usdcMock.connect(owner.wallet).approve(jackpotBridgeManager.getAddress(), usdc(5));
-      
+      await usdcMock
+        .connect(owner.wallet)
+        .approve(jackpotBridgeManager.getAddress(), usdc(5));
+
       const tickets: Ticket[] = [
-        { normals: [BigInt(1), BigInt(2), BigInt(3), BigInt(4), BigInt(5)], bonusball: BigInt(1) },
-        { normals: [BigInt(6), BigInt(7), BigInt(8), BigInt(9), BigInt(10)], bonusball: BigInt(2) },
+        {
+          normals: [BigInt(1), BigInt(2), BigInt(3), BigInt(4), BigInt(5)],
+          bonusball: BigInt(1),
+        },
+        {
+          normals: [BigInt(6), BigInt(7), BigInt(8), BigInt(9), BigInt(10)],
+          bonusball: BigInt(2),
+        },
       ];
       const recipient = buyerOne.address;
-      const referrers: Address[] = [referrerOne.address, referrerTwo.address, referrerThree.address];
-      const referralSplitBps: bigint[] = [ether(.3333), ether(.3333), ether(.3334)];
+      const referrers: Address[] = [
+        referrerOne.address,
+        referrerTwo.address,
+        referrerThree.address,
+      ];
+      const referralSplitBps: bigint[] = [
+        ether(0.3333),
+        ether(0.3333),
+        ether(0.3334),
+      ];
       const source = ethers.encodeBytes32String("test");
-      
-      const ticketIds = await jackpotBridgeManager.connect(owner.wallet).buyTickets.staticCall(
-        tickets,
-        recipient,
-        referrers,
-        referralSplitBps,
-        source
-      );
 
-      await jackpotBridgeManager.connect(owner.wallet).buyTickets(
-        tickets,
-        recipient,
-        referrers,
-        referralSplitBps,
-        source
-      );
+      const ticketIds = await jackpotBridgeManager
+        .connect(owner.wallet)
+        .buyTickets.staticCall(
+          tickets,
+          recipient,
+          referrers,
+          referralSplitBps,
+          source,
+        );
+
+      await jackpotBridgeManager
+        .connect(owner.wallet)
+        .buyTickets(tickets, recipient, referrers, referralSplitBps, source);
 
       subjectTicketIds = [...ticketIds];
       subjectRecipient = buyerTwo.address;
@@ -538,23 +732,25 @@ describe("JackpotBridgeManager", () => {
         await jackpotBridgeManager.getAddress(),
         subjectTicketIds,
         subjectRecipient,
-        buyerOne.wallet
+        buyerOne.wallet,
       );
     });
 
     async function subject() {
-      return await jackpotBridgeManager.connect(owner.wallet).claimTickets(
-        subjectTicketIds,
-        subjectRecipient,
-        subjectSignature
-      );
+      return await jackpotBridgeManager
+        .connect(owner.wallet)
+        .claimTickets(subjectTicketIds, subjectRecipient, subjectSignature);
     }
 
     it("should transfer the ticket to the recipient", async () => {
       await subject();
 
-      expect(await jackpotNFT.ownerOf(subjectTicketIds[0])).to.eq(subjectRecipient);
-      expect(await jackpotNFT.ownerOf(subjectTicketIds[1])).to.eq(subjectRecipient);
+      expect(await jackpotNFT.ownerOf(subjectTicketIds[0])).to.eq(
+        subjectRecipient,
+      );
+      expect(await jackpotNFT.ownerOf(subjectTicketIds[1])).to.eq(
+        subjectRecipient,
+      );
     });
 
     describe("when the recipient is the bridge manager", async () => {
@@ -563,7 +759,10 @@ describe("JackpotBridgeManager", () => {
       });
 
       it("should revert", async () => {
-        await expect(subject()).to.be.revertedWithCustomError(jackpotBridgeManager, "InvalidRecipient");
+        await expect(subject()).to.be.revertedWithCustomError(
+          jackpotBridgeManager,
+          "InvalidRecipient",
+        );
       });
     });
 
@@ -573,7 +772,10 @@ describe("JackpotBridgeManager", () => {
       });
 
       it("should revert", async () => {
-        await expect(subject()).to.be.revertedWithCustomError(jackpotBridgeManager, "ZeroAddress");
+        await expect(subject()).to.be.revertedWithCustomError(
+          jackpotBridgeManager,
+          "ZeroAddress",
+        );
       });
     });
   });
@@ -588,7 +790,10 @@ describe("JackpotBridgeManager", () => {
     });
 
     async function subject(): Promise<bigint[]> {
-      return await jackpotBridgeManager.getUserTickets(subjectUser, subjectDrawingId);
+      return await jackpotBridgeManager.getUserTickets(
+        subjectUser,
+        subjectDrawingId,
+      );
     }
 
     describe("when user has no tickets", () => {
@@ -602,34 +807,40 @@ describe("JackpotBridgeManager", () => {
       let expectedTicketIds: bigint[];
 
       beforeEach(async () => {
-        await usdcMock.connect(owner.wallet).approve(jackpotBridgeManager.getAddress(), usdc(5));
-        
+        await usdcMock
+          .connect(owner.wallet)
+          .approve(jackpotBridgeManager.getAddress(), usdc(5));
+
         const tickets: Ticket[] = [
-          { normals: [BigInt(1), BigInt(2), BigInt(3), BigInt(4), BigInt(5)], bonusball: BigInt(1) },
-          { normals: [BigInt(6), BigInt(7), BigInt(8), BigInt(9), BigInt(10)], bonusball: BigInt(2) },
+          {
+            normals: [BigInt(1), BigInt(2), BigInt(3), BigInt(4), BigInt(5)],
+            bonusball: BigInt(1),
+          },
+          {
+            normals: [BigInt(6), BigInt(7), BigInt(8), BigInt(9), BigInt(10)],
+            bonusball: BigInt(2),
+          },
         ];
         const recipient = buyerOne.address;
         const referrers: Address[] = [];
         const referralSplitBps: bigint[] = [];
         const source = ethers.encodeBytes32String("test");
-        
-        const ticketIds = await jackpotBridgeManager.connect(owner.wallet).buyTickets.staticCall(
-          tickets,
-          recipient,
-          referrers,
-          referralSplitBps,
-          source
-        );
-        
+
+        const ticketIds = await jackpotBridgeManager
+          .connect(owner.wallet)
+          .buyTickets.staticCall(
+            tickets,
+            recipient,
+            referrers,
+            referralSplitBps,
+            source,
+          );
+
         expectedTicketIds = [...ticketIds]; // Create mutable copy
 
-        await jackpotBridgeManager.connect(owner.wallet).buyTickets(
-          tickets,
-          recipient,
-          referrers,
-          referralSplitBps,
-          source
-        );
+        await jackpotBridgeManager
+          .connect(owner.wallet)
+          .buyTickets(tickets, recipient, referrers, referralSplitBps, source);
       });
 
       it("should return all owned tickets for the drawing", async () => {
@@ -642,7 +853,8 @@ describe("JackpotBridgeManager", () => {
       it("should verify ownership mapping matches", async () => {
         const userTickets = await subject();
         for (const ticketId of userTickets) {
-          if (ticketId !== 0n) { // Skip zero entries from transferred tickets
+          if (ticketId !== 0n) {
+            // Skip zero entries from transferred tickets
             const owner = await jackpotBridgeManager.ticketOwner(ticketId);
             expect(owner).to.equal(subjectUser);
           }
@@ -654,48 +866,52 @@ describe("JackpotBridgeManager", () => {
       let originalTicketIds: bigint[];
 
       beforeEach(async () => {
-        await usdcMock.connect(owner.wallet).approve(jackpotBridgeManager.getAddress(), usdc(5));
-        
+        await usdcMock
+          .connect(owner.wallet)
+          .approve(jackpotBridgeManager.getAddress(), usdc(5));
+
         const tickets: Ticket[] = [
-          { normals: [BigInt(1), BigInt(2), BigInt(3), BigInt(4), BigInt(5)], bonusball: BigInt(1) },
-          { normals: [BigInt(6), BigInt(7), BigInt(8), BigInt(9), BigInt(10)], bonusball: BigInt(2) },
+          {
+            normals: [BigInt(1), BigInt(2), BigInt(3), BigInt(4), BigInt(5)],
+            bonusball: BigInt(1),
+          },
+          {
+            normals: [BigInt(6), BigInt(7), BigInt(8), BigInt(9), BigInt(10)],
+            bonusball: BigInt(2),
+          },
         ];
         const recipient = buyerOne.address;
         const referrers: Address[] = [];
         const referralSplitBps: bigint[] = [];
         const source = ethers.encodeBytes32String("test");
-        
-        const ticketIds = await jackpotBridgeManager.connect(owner.wallet).buyTickets.staticCall(
-          tickets,
-          recipient,
-          referrers,
-          referralSplitBps,
-          source
-        );
-        
+
+        const ticketIds = await jackpotBridgeManager
+          .connect(owner.wallet)
+          .buyTickets.staticCall(
+            tickets,
+            recipient,
+            referrers,
+            referralSplitBps,
+            source,
+          );
+
         originalTicketIds = [...ticketIds]; // Create mutable copy
 
-        await jackpotBridgeManager.connect(owner.wallet).buyTickets(
-          tickets,
-          recipient,
-          referrers,
-          referralSplitBps,
-          source
-        );
+        await jackpotBridgeManager
+          .connect(owner.wallet)
+          .buyTickets(tickets, recipient, referrers, referralSplitBps, source);
 
         // Transfer all tickets away using claimTickets
         const signature = await generateClaimTicketSignature(
           await jackpotBridgeManager.getAddress(),
           originalTicketIds,
           buyerTwo.address,
-          buyerOne.wallet
+          buyerOne.wallet,
         );
 
-        await jackpotBridgeManager.connect(owner.wallet).claimTickets(
-          originalTicketIds,
-          buyerTwo.address,
-          signature
-        );
+        await jackpotBridgeManager
+          .connect(owner.wallet)
+          .claimTickets(originalTicketIds, buyerTwo.address, signature);
       });
 
       it("should return array with zeros for transferred tickets", async () => {
@@ -717,35 +933,50 @@ describe("JackpotBridgeManager", () => {
       let originalTicketIds: bigint[];
 
       beforeEach(async () => {
-        await usdcMock.connect(owner.wallet).approve(jackpotBridgeManager.getAddress(), usdc(15));
-        
+        await usdcMock
+          .connect(owner.wallet)
+          .approve(jackpotBridgeManager.getAddress(), usdc(15));
+
         const tickets: Ticket[] = [
-          { normals: [BigInt(1), BigInt(2), BigInt(3), BigInt(4), BigInt(5)], bonusball: BigInt(1) },
-          { normals: [BigInt(6), BigInt(7), BigInt(8), BigInt(9), BigInt(10)], bonusball: BigInt(2) },
-          { normals: [BigInt(11), BigInt(12), BigInt(13), BigInt(14), BigInt(15)], bonusball: BigInt(3) },
+          {
+            normals: [BigInt(1), BigInt(2), BigInt(3), BigInt(4), BigInt(5)],
+            bonusball: BigInt(1),
+          },
+          {
+            normals: [BigInt(6), BigInt(7), BigInt(8), BigInt(9), BigInt(10)],
+            bonusball: BigInt(2),
+          },
+          {
+            normals: [
+              BigInt(11),
+              BigInt(12),
+              BigInt(13),
+              BigInt(14),
+              BigInt(15),
+            ],
+            bonusball: BigInt(3),
+          },
         ];
         const recipient = buyerOne.address;
         const referrers: Address[] = [];
         const referralSplitBps: bigint[] = [];
         const source = ethers.encodeBytes32String("test");
-        
-        const ticketIds = await jackpotBridgeManager.connect(owner.wallet).buyTickets.staticCall(
-          tickets,
-          recipient,
-          referrers,
-          referralSplitBps,
-          source
-        );
-        
+
+        const ticketIds = await jackpotBridgeManager
+          .connect(owner.wallet)
+          .buyTickets.staticCall(
+            tickets,
+            recipient,
+            referrers,
+            referralSplitBps,
+            source,
+          );
+
         originalTicketIds = [...ticketIds]; // Create mutable copy
 
-        await jackpotBridgeManager.connect(owner.wallet).buyTickets(
-          tickets,
-          recipient,
-          referrers,
-          referralSplitBps,
-          source
-        );
+        await jackpotBridgeManager
+          .connect(owner.wallet)
+          .buyTickets(tickets, recipient, referrers, referralSplitBps, source);
 
         // Transfer only the middle ticket (index 1)
         const ticketsToTransfer = [originalTicketIds[1]];
@@ -753,14 +984,12 @@ describe("JackpotBridgeManager", () => {
           await jackpotBridgeManager.getAddress(),
           ticketsToTransfer,
           buyerTwo.address,
-          buyerOne.wallet
+          buyerOne.wallet,
         );
 
-        await jackpotBridgeManager.connect(owner.wallet).claimTickets(
-          ticketsToTransfer,
-          buyerTwo.address,
-          signature
-        );
+        await jackpotBridgeManager
+          .connect(owner.wallet)
+          .claimTickets(ticketsToTransfer, buyerTwo.address, signature);
       });
 
       it("should return mixed array with zeros for transferred tickets", async () => {
@@ -773,15 +1002,21 @@ describe("JackpotBridgeManager", () => {
 
       it("should verify mixed ownership states", async () => {
         // First ticket - still owned
-        const owner0 = await jackpotBridgeManager.ticketOwner(originalTicketIds[0]);
+        const owner0 = await jackpotBridgeManager.ticketOwner(
+          originalTicketIds[0],
+        );
         expect(owner0).to.equal(subjectUser);
-        
+
         // Second ticket - transferred
-        const owner1 = await jackpotBridgeManager.ticketOwner(originalTicketIds[1]);
+        const owner1 = await jackpotBridgeManager.ticketOwner(
+          originalTicketIds[1],
+        );
         expect(owner1).to.equal(ethers.ZeroAddress);
-        
+
         // Third ticket - still owned
-        const owner2 = await jackpotBridgeManager.ticketOwner(originalTicketIds[2]);
+        const owner2 = await jackpotBridgeManager.ticketOwner(
+          originalTicketIds[2],
+        );
         expect(owner2).to.equal(subjectUser);
       });
     });
@@ -791,66 +1026,99 @@ describe("JackpotBridgeManager", () => {
       let drawing2TicketIds: bigint[];
 
       beforeEach(async () => {
-        await usdcMock.connect(owner.wallet).approve(jackpotBridgeManager.getAddress(), usdc(10));
-        
+        await usdcMock
+          .connect(owner.wallet)
+          .approve(jackpotBridgeManager.getAddress(), usdc(10));
+
         const tickets: Ticket[] = [
-          { normals: [BigInt(1), BigInt(2), BigInt(3), BigInt(4), BigInt(5)], bonusball: BigInt(1) },
-          { normals: [BigInt(6), BigInt(7), BigInt(8), BigInt(9), BigInt(10)], bonusball: BigInt(2) },
+          {
+            normals: [BigInt(1), BigInt(2), BigInt(3), BigInt(4), BigInt(5)],
+            bonusball: BigInt(1),
+          },
+          {
+            normals: [BigInt(6), BigInt(7), BigInt(8), BigInt(9), BigInt(10)],
+            bonusball: BigInt(2),
+          },
         ];
         const recipient = buyerOne.address;
         const referrers: Address[] = [];
         const referralSplitBps: bigint[] = [];
         const source = ethers.encodeBytes32String("test");
-        
+
         // Buy tickets for drawing 1
-        const drawing1Tickets = await jackpotBridgeManager.connect(owner.wallet).buyTickets.staticCall(
-          tickets,
-          recipient,
-          referrers,
-          referralSplitBps,
-          source
-        );
-        
+        const drawing1Tickets = await jackpotBridgeManager
+          .connect(owner.wallet)
+          .buyTickets.staticCall(
+            tickets,
+            recipient,
+            referrers,
+            referralSplitBps,
+            source,
+          );
+
         drawing1TicketIds = [...drawing1Tickets]; // Create mutable copy
 
-        await jackpotBridgeManager.connect(owner.wallet).buyTickets(
-          tickets,
-          recipient,
-          referrers,
-          referralSplitBps,
-          source
-        );
+        await jackpotBridgeManager
+          .connect(owner.wallet)
+          .buyTickets(tickets, recipient, referrers, referralSplitBps, source);
 
         // Advance to next drawing
-        await time.increase(jackpotSystem.deploymentParams.drawingDurationInSeconds + BigInt(1));
-        const drawingState = await jackpot.getDrawingState(1);
-        await jackpot.connect(owner.wallet).runJackpot(
-          { value: jackpotSystem.deploymentParams.entropyFee + ((jackpotSystem.deploymentParams.entropyBaseGasLimit + jackpotSystem.deploymentParams.entropyVariableGasLimit * drawingState.bonusballMax) * BigInt(1e7)) }
+        await time.increase(
+          jackpotSystem.deploymentParams.drawingDurationInSeconds + BigInt(1),
         );
-        await entropyProvider.connect(owner.wallet).randomnessCallback([[BigInt(1), BigInt(2), BigInt(3), BigInt(4), BigInt(5)], [BigInt(1)]]);
+        const drawingState = await jackpot.getDrawingState(1);
+        await jackpot
+          .connect(owner.wallet)
+          .runJackpot({
+            value:
+              jackpotSystem.deploymentParams.entropyFee +
+              (jackpotSystem.deploymentParams.entropyBaseGasLimit +
+                jackpotSystem.deploymentParams.entropyVariableGasLimit *
+                  drawingState.bonusballMax) *
+                BigInt(1e7),
+          });
+        await entropyProvider
+          .connect(owner.wallet)
+          .randomnessCallback([
+            [BigInt(1), BigInt(2), BigInt(3), BigInt(4), BigInt(5)],
+            [BigInt(1)],
+          ]);
 
         // Buy tickets for drawing 2
         const moreTickets: Ticket[] = [
-          { normals: [BigInt(11), BigInt(12), BigInt(13), BigInt(14), BigInt(15)], bonusball: BigInt(3) },
+          {
+            normals: [
+              BigInt(11),
+              BigInt(12),
+              BigInt(13),
+              BigInt(14),
+              BigInt(15),
+            ],
+            bonusball: BigInt(3),
+          },
         ];
 
-        const drawing2Tickets = await jackpotBridgeManager.connect(owner.wallet).buyTickets.staticCall(
-          moreTickets,
-          recipient,
-          referrers,
-          referralSplitBps,
-          source
-        );
-        
+        const drawing2Tickets = await jackpotBridgeManager
+          .connect(owner.wallet)
+          .buyTickets.staticCall(
+            moreTickets,
+            recipient,
+            referrers,
+            referralSplitBps,
+            source,
+          );
+
         drawing2TicketIds = [...drawing2Tickets]; // Create mutable copy
 
-        await jackpotBridgeManager.connect(owner.wallet).buyTickets(
-          moreTickets,
-          recipient,
-          referrers,
-          referralSplitBps,
-          source
-        );
+        await jackpotBridgeManager
+          .connect(owner.wallet)
+          .buyTickets(
+            moreTickets,
+            recipient,
+            referrers,
+            referralSplitBps,
+            source,
+          );
       });
 
       it("should return only tickets for drawing 1 when requested", async () => {
@@ -880,57 +1148,82 @@ describe("JackpotBridgeManager", () => {
       let buyerTwoTickets: bigint[];
 
       beforeEach(async () => {
-        await usdcMock.connect(owner.wallet).approve(jackpotBridgeManager.getAddress(), usdc(10));
-        
+        await usdcMock
+          .connect(owner.wallet)
+          .approve(jackpotBridgeManager.getAddress(), usdc(10));
+
         const tickets: Ticket[] = [
-          { normals: [BigInt(1), BigInt(2), BigInt(3), BigInt(4), BigInt(5)], bonusball: BigInt(1) },
-          { normals: [BigInt(6), BigInt(7), BigInt(8), BigInt(9), BigInt(10)], bonusball: BigInt(2) },
+          {
+            normals: [BigInt(1), BigInt(2), BigInt(3), BigInt(4), BigInt(5)],
+            bonusball: BigInt(1),
+          },
+          {
+            normals: [BigInt(6), BigInt(7), BigInt(8), BigInt(9), BigInt(10)],
+            bonusball: BigInt(2),
+          },
         ];
         const referrers: Address[] = [];
         const referralSplitBps: bigint[] = [];
         const source = ethers.encodeBytes32String("test");
-        
+
         // Buy tickets for buyerOne
-        const buyerOneTicketIds = await jackpotBridgeManager.connect(owner.wallet).buyTickets.staticCall(
-          tickets,
-          buyerOne.address,
-          referrers,
-          referralSplitBps,
-          source
-        );
-        
+        const buyerOneTicketIds = await jackpotBridgeManager
+          .connect(owner.wallet)
+          .buyTickets.staticCall(
+            tickets,
+            buyerOne.address,
+            referrers,
+            referralSplitBps,
+            source,
+          );
+
         buyerOneTickets = [...buyerOneTicketIds]; // Create mutable copy
 
-        await jackpotBridgeManager.connect(owner.wallet).buyTickets(
-          tickets,
-          buyerOne.address,
-          referrers,
-          referralSplitBps,
-          source
-        );
+        await jackpotBridgeManager
+          .connect(owner.wallet)
+          .buyTickets(
+            tickets,
+            buyerOne.address,
+            referrers,
+            referralSplitBps,
+            source,
+          );
 
         // Buy different tickets for buyerTwo
         const moreTickets: Ticket[] = [
-          { normals: [BigInt(11), BigInt(12), BigInt(13), BigInt(14), BigInt(15)], bonusball: BigInt(3) },
+          {
+            normals: [
+              BigInt(11),
+              BigInt(12),
+              BigInt(13),
+              BigInt(14),
+              BigInt(15),
+            ],
+            bonusball: BigInt(3),
+          },
         ];
 
-        const buyerTwoTicketIds = await jackpotBridgeManager.connect(owner.wallet).buyTickets.staticCall(
-          moreTickets,
-          buyerTwo.address,
-          referrers,
-          referralSplitBps,
-          source
-        );
-        
+        const buyerTwoTicketIds = await jackpotBridgeManager
+          .connect(owner.wallet)
+          .buyTickets.staticCall(
+            moreTickets,
+            buyerTwo.address,
+            referrers,
+            referralSplitBps,
+            source,
+          );
+
         buyerTwoTickets = [...buyerTwoTicketIds]; // Create mutable copy
 
-        await jackpotBridgeManager.connect(owner.wallet).buyTickets(
-          moreTickets,
-          buyerTwo.address,
-          referrers,
-          referralSplitBps,
-          source
-        );
+        await jackpotBridgeManager
+          .connect(owner.wallet)
+          .buyTickets(
+            moreTickets,
+            buyerTwo.address,
+            referrers,
+            referralSplitBps,
+            source,
+          );
       });
 
       it("should return correct tickets for buyerOne", async () => {

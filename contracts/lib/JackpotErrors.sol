@@ -25,6 +25,7 @@ library JackpotErrors {
     error TooManyReferrers();
     error ReferralSplitSumInvalid();
     error InvalidBonusball();
+    //@audit-info unused error
     error TicketAlreadyMinted();
     error NoTicketsToClaim();
     error NotTicketOwner();
@@ -44,6 +45,7 @@ library JackpotErrors {
     error LPDepositsNotInitialized();
     error JackpotAlreadyInitialized();
     error TicketPurchasesDisabled();
+    //@audit-info unused custom error
     error InvalidTierWeights();
     error InvalidReferralSplitBps();
     error InvalidNormalsCount();
@@ -52,6 +54,7 @@ library JackpotErrors {
     error NoPrizePool();
     error TicketPurchasesAlreadyEnabled();
     error TicketPurchasesAlreadyDisabled();
+    //@audit-info unused error
     error InvalidNormalBallMax();
     error InvalidDrawingDuration();
     error InvalidBonusballMin();

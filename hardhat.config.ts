@@ -23,7 +23,7 @@ const config: HardhatUserConfig = {
     sources: "./contracts",
     tests: "./test",
     cache: "./cache",
-    artifacts: "./artifacts"
+    artifacts: "./artifacts",
   },
   typechain: {
     outDir: "typechain-types",
@@ -34,18 +34,23 @@ const config: HardhatUserConfig = {
   },
   networks: {
     hardhat: {
-      chainId: 31337,
+      chainId: 84532,
       allowUnlimitedContractSize: true,
     },
     localhost: {
       url: "http://127.0.0.1:8545",
-      chainId: 31337,
+      chainId: 84532,
       allowUnlimitedContractSize: true,
     },
     base_sepolia: {
       url: process.env.SEPOLIA_RPC_URL || "https://sepolia.base.org",
       accounts: pk ? [pk] : [],
       chainId: 84532,
+      forking: {
+        url: process.env.SEPOLIA_RPC_URL || "https://sepolia.base.org",
+        blockNumber: 13700000, // Recent Base Sepolia block
+        enabled: true,
+      },
       ignition: {
         maxFeePerGasLimit: 50_000_000_000n, // 50 gwei
         maxPriorityFeePerGas: 2_000_000_000n, // 2 gwei
@@ -71,10 +76,10 @@ const config: HardhatUserConfig = {
         chainId: 84532,
         urls: {
           apiURL: "https://api-sepolia.basescan.org/api",
-          browserURL: "https://sepolia.basescan.org"
-        }
-      }
-    ]
+          browserURL: "https://sepolia.basescan.org",
+        },
+      },
+    ],
   },
   ignition: {
     blockPollingInterval: 1_000,
@@ -85,7 +90,14 @@ const config: HardhatUserConfig = {
   abigen: {
     outDir: "abi",
     inDir: "contracts",
-    includeContracts: ["GuaranteedMinimumPayoutCalculator", "Jackpot", "JackpotBridgeManager", "JackpotLPManager", "JackpotTicketNFT", "ScaledEntropyProvider"],
+    includeContracts: [
+      "GuaranteedMinimumPayoutCalculator",
+      "Jackpot",
+      "JackpotBridgeManager",
+      "JackpotLPManager",
+      "JackpotTicketNFT",
+      "ScaledEntropyProvider",
+    ],
     excludeContracts: [],
     space: 2,
     autoCompile: true,

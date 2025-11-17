@@ -39,9 +39,11 @@ library UintCasts {
     function toUint8Array(uint256[] memory _values) internal pure returns (uint8[] memory) {
         uint256 len = _values.length;
         uint8[] memory out = new uint8[](len);
-        for (uint256 i = 0; i < len; ) {
+        for (uint256 i = 0; i < len;) {
             out[i] = toUint8(_values[i]);
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
         return out;
     }

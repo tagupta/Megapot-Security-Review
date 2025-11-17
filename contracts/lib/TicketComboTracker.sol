@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { Combinations } from "./Combinations.sol";
-import { LibBit } from "solady/src/utils/LibBit.sol";
+import {Combinations} from "./Combinations.sol";
+import {LibBit} from "solady/src/utils/LibBit.sol";
 
 /**
  * @title TicketComboTracker
@@ -15,6 +15,7 @@ import { LibBit } from "solady/src/utils/LibBit.sol";
  *      - Supports configurable normal ball ranges and bonusball values
  *      - Optimized for gas efficiency in high-volume jackpot scenarios
  */
+//@note Goal is to avoid looping through all tickets when determining how many winners exist in each tier
 library TicketComboTracker {
     struct ComboCount {
         uint128 count;
@@ -25,8 +26,8 @@ library TicketComboTracker {
         uint8 normalMax;
         uint8 bonusballMax;
         uint8 normalTiers;
-        mapping(uint8 => mapping(uint256 => ComboCount)) comboCounts;
-        mapping(uint8 => ComboCount) bonusballTicketCounts;
+        mapping(uint8 => mapping(uint256 => ComboCount)) comboCounts; //@note bonusball => masked numbers [subset value] => ComboCount
+        mapping(uint8 => ComboCount) bonusballTicketCounts; //bonusBall => ComboCount
     }
 
     /**
@@ -44,12 +45,8 @@ library TicketComboTracker {
      * - No validation as this is internal initialization
      * - Caller responsible for providing valid parameters
      */
-    function init(
-        Tracker storage tracker,
-        uint8 _normalMax,
-        uint8 _bonusballMax,
-        uint8 _normalTiers
-    ) internal {
+    function init(Tracker storage tracker, uint8 _normalMax, uint8 _bonusballMax, uint8 _normalTiers) internal {
+        //@note normalMax >= normalTiers
         tracker.normalMax = _normalMax;
         tracker.bonusballMax = _bonusballMax;
         tracker.normalTiers = _normalTiers;
@@ -70,14 +67,7 @@ library TicketComboTracker {
      * - Validates range and uniqueness to prevent invalid combinations
      * - Uses bit operations for efficient duplicate detection
      */
-    function toNormalsBitVector(
-        uint8[] memory _set,
-        uint256 _maxNormalBall
-    )
-        internal
-        pure
-        returns (uint256)
-    {
+    function toNormalsBitVector(uint8[] memory _set, uint256 _maxNormalBall) internal pure returns (uint256) {
         require(_set.length != 0, "Invalid set length");
         uint256 bitVector = 0;
         for (uint256 i; i < _set.length; ++i) {
@@ -92,7 +82,7 @@ library TicketComboTracker {
      * @notice Inserts a ticket combination into the tracker and updates subset counts
      * @dev Converts ticket to bit vector, generates all subsets, and updates counts.
      *      Distinguishes between first purchase of a ticket (unique) and duplicates for
-     *      payout calculations. 
+     *      payout calculations.
      * @param _tracker Storage reference to the tracker
      * @param _normalBalls Array of normal ball numbers
      * @param _bonusball Bonusball number
@@ -112,11 +102,12 @@ library TicketComboTracker {
     function insert(
         Tracker storage _tracker,
         uint8[] memory _normalBalls,
-        uint8 _bonusball
-    )
-        internal
-        returns (uint256 ticketNumbers, bool isDup)
-    {
+        uint8 _bonusball //@note why not validating the value of _bonusball? _bonusball >= 1 and _bonusball <= bonusBallMax
+    ) internal returns (uint256 ticketNumbers, bool isDup) {
+        //@note bonusball validation:
+        // require(_bonusball >= 1 && _bonusball <= _tracker.bonusballMax, "Invalid bonus");
+        // require(uint16(_tracker.normalMax) + uint16(_bonusball) <= 255, "bit overflow");
+        //@audit-q way to ensure that the tracker has been initialized?? what if uninitialized tracker has been used to inset ticket combos?
         require(_normalBalls.length == _tracker.normalTiers, "Invalid pick length");
         uint256 set = toNormalsBitVector(_normalBalls, _tracker.normalMax);
         // Iterate over all tier combos and store the combo counts
@@ -142,28 +133,27 @@ library TicketComboTracker {
         ticketNumbers = set |= 1 << (_bonusball + _tracker.normalMax);
     }
 
-    function _countSubsetMatches(
-        Tracker storage _tracker,
-        uint256 _normalBallsBitVector,
-        uint8 _bonusball
-    )
+    function _countSubsetMatches(Tracker storage _tracker, uint256 _normalBallsBitVector, uint8 _bonusball)
         private
         view
         returns (uint256[] memory matches, uint256[] memory dupMatches)
+    //@note Each matches value represents how many tickets contained at least that subset size of the winning normals
     {
-        matches = new uint256[]((_tracker.normalTiers+1)*2);
-        dupMatches = new uint256[]((_tracker.normalTiers+1)*2);
-        
+        //@audit-gas could use memory value to store the value of normalTiers => instead of reading it twice
+        matches = new uint256[]((_tracker.normalTiers + 1) * 2);
+        dupMatches = new uint256[]((_tracker.normalTiers + 1) * 2);
+        //@audit-gas store the values of bonusballMax and normalTiers in memory variable to save gas
         for (uint8 i = 1; i <= _tracker.bonusballMax; i++) {
             for (uint8 k = 1; k <= _tracker.normalTiers; k++) {
+                //@report-written this could be optimized, instead of computing this every i, can be computed once and stored
                 uint256[] memory subsets = Combinations.generateSubsets(_normalBallsBitVector, k);
                 for (uint256 l = 0; l < subsets.length; l++) {
                     if (i == _bonusball) {
-                        matches[(k*2)+1] += _tracker.comboCounts[i][subsets[l]].count;
-                        dupMatches[k*2+1] += _tracker.comboCounts[i][subsets[l]].dupCount;
+                        matches[(k * 2) + 1] += _tracker.comboCounts[i][subsets[l]].count;
+                        dupMatches[k * 2 + 1] += _tracker.comboCounts[i][subsets[l]].dupCount;
                     } else {
-                        matches[(k*2)] += _tracker.comboCounts[i][subsets[l]].count;
-                        dupMatches[k*2] += _tracker.comboCounts[i][subsets[l]].dupCount;
+                        matches[(k * 2)] += _tracker.comboCounts[i][subsets[l]].count;
+                        dupMatches[k * 2] += _tracker.comboCounts[i][subsets[l]].dupCount;
                     }
                 }
             }
@@ -174,35 +164,31 @@ library TicketComboTracker {
         Tracker storage _tracker,
         uint256[] memory _matches,
         uint256[] memory _dupMatches
-    )
-        private
-        view
-        returns (uint256[] memory result, uint256[] memory dupResult)
-    {
+    ) private view returns (uint256[] memory result, uint256[] memory dupResult) {
         result = new uint256[](_matches.length);
         dupResult = new uint256[](_dupMatches.length);
-        
+
         // Solve top-down (starting from "all matched")
         for (uint256 k = _tracker.normalTiers; k >= 1; --k) {
-            uint256 s = _matches[2*k];
-            uint256 sp = _matches[2*k+1];
-            uint256 sd = _dupMatches[2*k];
-            uint256 sdp = _dupMatches[2*k+1];
-            
+            uint256 s = _matches[2 * k];
+            uint256 sp = _matches[2 * k + 1];
+            uint256 sd = _dupMatches[2 * k];
+            uint256 sdp = _dupMatches[2 * k + 1];
+
             // Repeatedly subtract higher-tier counts that spill over into this tier
             for (uint256 m = k + 1; m <= _tracker.normalTiers; ++m) {
                 // Each higher-tier ticket contributes C(m,k) subsets to this tier
                 uint256 c = Combinations.choose(m, k);
-                s -= c * result[2*m];
-                sp -= c * result[2*m+1];
-                sd -= c * dupResult[2*m];
-                sdp -= c * dupResult[2*m+1];
+                s -= c * result[2 * m];
+                sp -= c * result[2 * m + 1];
+                sd -= c * dupResult[2 * m];
+                sdp -= c * dupResult[2 * m + 1];
             }
-            
-            result[2*k] = s;
-            result[2*k+1] = sp;
-            dupResult[2*k] = sd;
-            dupResult[2*k+1] = sdp;
+
+            result[2 * k] = s;
+            result[2 * k + 1] = sp;
+            dupResult[2 * k] = sd;
+            dupResult[2 * k + 1] = sdp;
         }
     }
 
@@ -211,18 +197,15 @@ library TicketComboTracker {
         uint8 _bonusball,
         uint256[] memory _uniqueResult,
         uint256[] memory _dupResult
-    )
-        private
-        view
-    {
+    ) private view {
         // Start with all bonusball-only tickets
         _uniqueResult[1] = _tracker.bonusballTicketCounts[_bonusball].count;
         _dupResult[1] = _tracker.bonusballTicketCounts[_bonusball].dupCount;
-        
+
         // Subtract tickets that also match normal balls (they're counted in higher tiers)
         for (uint256 i = 1; i <= _tracker.normalTiers; i++) {
-            _uniqueResult[1] -= _uniqueResult[2*i + 1];
-            _dupResult[1] -= _dupResult[2*i + 1];
+            _uniqueResult[1] -= _uniqueResult[2 * i + 1];
+            _dupResult[1] -= _dupResult[2 * i + 1];
         }
     }
 
@@ -247,11 +230,7 @@ library TicketComboTracker {
      * - Uses mathematical inclusion-exclusion for accurate counting
      * - Prevents over-counting tickets in multiple tiers
      */
-    function countTierMatchesWithBonusball(
-        Tracker storage _tracker,
-        uint8[] memory _normalBalls,
-        uint8 _bonusball
-    )
+    function countTierMatchesWithBonusball(Tracker storage _tracker, uint8[] memory _normalBalls, uint8 _bonusball)
         internal
         view
         returns (uint256 winningTicket, uint256[] memory uniqueResult, uint256[] memory dupResult)
@@ -261,10 +240,10 @@ library TicketComboTracker {
 
         // Step 1: Count all subset matches across all bonusballs
         (uint256[] memory matches, uint256[] memory dupMatches) = _countSubsetMatches(_tracker, set, _bonusball);
-        
+
         // Step 2: Apply inclusion-exclusion principle to remove double counting
         (uniqueResult, dupResult) = _applyInclusionExclusionPrinciple(_tracker, matches, dupMatches);
-        
+
         // Step 3: Calculate bonusball-only matches (no normal balls matched)
         _calculateBonusballOnlyMatches(_tracker, _bonusball, uniqueResult, dupResult);
     }
@@ -285,11 +264,7 @@ library TicketComboTracker {
      * - Validates input format before processing
      * - Uses efficient bit vector lookup for O(1) duplicate detection
      */
-    function isDuplicate(
-        Tracker storage _tracker,
-        uint8[] memory _normalBalls,
-        uint8 _bonusball
-    )
+    function isDuplicate(Tracker storage _tracker, uint8[] memory _normalBalls, uint8 _bonusball)
         internal
         view
         returns (bool)
@@ -321,10 +296,8 @@ library TicketComboTracker {
      * - Uses efficient LibBit operations to prevent gas issues with large bit vectors
      * - Handles edge cases like single-ball tickets and sparse patterns gracefully
      */
-    function unpackTicket(
-        uint256 _packedTicket,
-        uint8 _normalMax
-    )
+    //@note OK
+    function unpackTicket(uint256 _packedTicket, uint8 _normalMax)
         internal
         pure
         returns (uint8[] memory normalBalls, uint8 bonusball)

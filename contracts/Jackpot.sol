@@ -12,24 +12,24 @@ For licensing inquiries: legal@coordinationlabs.com
 
 pragma solidity ^0.8.28;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import { LibBit } from "solady/src/utils/LibBit.sol";
-import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { Ownable2Step } from "@openzeppelin/contracts/access/Ownable2Step.sol";
-import { ReentrancyGuardTransient } from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {LibBit} from "solady/src/utils/LibBit.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import { Combinations } from "./lib/Combinations.sol";
-import { IJackpot } from "./interfaces/IJackpot.sol";
-import { IJackpotLPManager } from "./interfaces/IJackpotLPManager.sol";
-import { IJackpotTicketNFT } from "./interfaces/IJackpotTicketNFT.sol";
-import { IPayoutCalculator } from "./interfaces/IPayoutCalculator.sol";
-import { IScaledEntropyProvider } from "./interfaces/IScaledEntropyProvider.sol";
-import { JackpotErrors } from "./lib/JackpotErrors.sol";
-import { TicketComboTracker } from "./lib/TicketComboTracker.sol";
-import { UintCasts } from "./lib/UintCasts.sol";
+import {Combinations} from "./lib/Combinations.sol";
+import {IJackpot} from "./interfaces/IJackpot.sol";
+import {IJackpotLPManager} from "./interfaces/IJackpotLPManager.sol";
+import {IJackpotTicketNFT} from "./interfaces/IJackpotTicketNFT.sol";
+import {IPayoutCalculator} from "./interfaces/IPayoutCalculator.sol";
+import {IScaledEntropyProvider} from "./interfaces/IScaledEntropyProvider.sol";
+import {JackpotErrors} from "./lib/JackpotErrors.sol";
+import {TicketComboTracker} from "./lib/TicketComboTracker.sol";
+import {UintCasts} from "./lib/UintCasts.sol";
 
 /**
  * @title Jackpot
@@ -37,7 +37,6 @@ import { UintCasts } from "./lib/UintCasts.sol";
  * @dev Implements a decentralized jackpot system with NFT-based tickets, LP-managed prize pools, and provably fair drawings using Pyth Network entropy
  */
 contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
-
     using SafeERC20 for IERC20;
     using UintCasts for uint256;
     using UintCasts for uint256[];
@@ -78,26 +77,19 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
         uint256 referralFees
     );
 
-    event TicketPurchased(
+    event TicketPurchased( // Note: this is used for telemetry purposes
         address indexed recipient,
         uint256 indexed currentDrawingId,
-        bytes32 indexed source, // Note: this is used for telemetry purposes
+        bytes32 indexed source,
         uint256 userTicketId,
         uint8[] normals,
         uint8 bonusball,
         bytes32 referralScheme
     );
 
-    event ReferralFeeCollected(
-        address indexed referrer,
-        uint256 amount
-    );
+    event ReferralFeeCollected(address indexed referrer, uint256 amount);
 
-    event ReferralSchemeAdded(
-        bytes32 indexed referralSchemeId,
-        address[] referrers,
-        uint256[] referralSplit
-    );
+    event ReferralSchemeAdded(bytes32 indexed referralSchemeId, address[] referrers, uint256[] referralSplit);
 
     event TicketWinningsClaimed(
         address indexed userAddress,
@@ -110,10 +102,7 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
 
     event TicketRefunded(uint256 indexed ticketId);
 
-    event ReferralFeesClaimed(
-        address indexed userAddress,
-        uint256 amount
-    );
+    event ReferralFeesClaimed(address indexed userAddress, uint256 amount);
 
     event JackpotSettled(
         uint256 indexed drawingId,
@@ -143,21 +132,11 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
         uint256 drawingTime
     );
 
-    event JackpotRunRequested(
-        uint256 indexed drawingId,
-        uint256 entropyGasLimit,
-        uint256 fee
-    );
+    event JackpotRunRequested(uint256 indexed drawingId, uint256 entropyGasLimit, uint256 fee);
 
-    event LpEarningsUpdated(
-        uint256 indexed drawingId,
-        uint256 amount
-    );
+    event LpEarningsUpdated(uint256 indexed drawingId, uint256 amount);
 
-    event ProtocolFeeCollected(
-        uint256 indexed drawingId,
-        uint256 amount
-    );
+    event ProtocolFeeCollected(uint256 indexed drawingId, uint256 amount);
 
     // Governance Events
     event NormalBallMaxUpdated(uint256 indexed drawingId, uint8 oldValue, uint8 newValue);
@@ -191,7 +170,7 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
     uint256 constant PRECISE_UNIT = 1e18;
     uint8 constant NORMAL_BALL_COUNT = 5;
     uint8 constant MAX_BIT_VECTOR_SIZE = 255;
-    uint256 constant MAX_PROTOCOL_FEE = 25e16; // 25%
+    uint256 constant MAX_PROTOCOL_FEE = 25e16; // 25% //0.25e18
 
     // =============================================================
     //                       STATE VARIABLES
@@ -200,13 +179,13 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
     // User and ticket mappings
     mapping(uint256 => TicketComboTracker.Tracker) internal drawingEntries; // drawing => TicketComboTracker
     mapping(uint256 => DrawingState) internal drawingState; // drawing => drawing state
-    
+
     // Fee and LP mappings
     mapping(address => uint256) public referralFees;
-    
+
     // Drawing and tier mappings
     mapping(bytes32 => ReferralScheme) internal referralSchemes;
-    
+
     // Core state variables
     uint256 public currentDrawingId;
 
@@ -215,13 +194,13 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
     // to be stored in each drawing's state but it is located in fees section)
     uint256 public ticketPrice;
     uint8 public normalBallMax;
-    uint8 public bonusballMin;
+    uint8 public bonusballMin; //@note minimum allowable size of the bonusball domain.
 
     // Used at drawing settlement - do not need to be stored in each drawing's state
     uint256 public drawingDurationInSeconds; // Used in drawingTime
     uint256 public reserveRatio; // Used in prize pool and ticket calcs
     uint256 public lpEdgeTarget; // Used in edgePerTicket
-    
+
     uint256 public governancePoolCap;
 
     // Fees
@@ -240,7 +219,7 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
     // Variable gas is the amount of gas that needs to be added per bonusball used (drawingState.bonusballMax)
     uint32 public entropyBaseGasLimit;
     uint32 public entropyVariableGasLimit;
-    
+
     // External contracts and contract settings
     IERC20 public usdc;
     IJackpotLPManager public jackpotLPManager;
@@ -274,17 +253,17 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
     /**
      * @notice Initializes the Jackpot contract with core jackpot parameters
      * @dev Sets initial jackpot configuration including ball ranges, fees, and timing.
-     *      Most parameters can be updated later via admin functions. 
+     *      Most parameters can be updated later via admin functions.
      *      The contract requires additional initialization via initialize(), initializeLPDeposits(), and initializeJackpot().
-     * @param _drawingDurationInSeconds Time between jackpot drawings in seconds
+     * @param _drawingDurationInSeconds Time between jackpot drawings in seconds //@note how long each round lasts before a new drawing can occur
      * @param _normalBallMax Maximum value for normal ball numbers (1 to this value)
      * @param _bonusballMin Minimum number of bonusball options (affects prize pool sizing)
-     * @param _lpEdgeTarget Target profit margin for liquidity providers (in PRECISE_UNIT scale)
+     * @param _lpEdgeTarget Target profit margin for liquidity providers (in PRECISE_UNIT scale) //@note Target expected profit margin (house edge) for Liquidity Providers (LPs) on every ticket sold.
      * @param _reserveRatio Fraction of LP pool held in reserve (in PRECISE_UNIT scale)
      * @param _referralFee Fraction of ticket price paid as referral fees (in PRECISE_UNIT scale)
      * @param _referralWinShare Fraction of winnings shared with referrers (in PRECISE_UNIT scale)
      * @param _protocolFee Fraction of excess LP earnings taken as protocol fee (in PRECISE_UNIT scale)
-     * @param _protocolFeeThreshold Minimum LP profit before protocol fees apply
+     * @param _protocolFeeThreshold Minimum LP profit before protocol fees apply //@note Minimum LP profit amount that must be exceeded before protocol fees apply.
      * @param _ticketPrice Price per ticket in USDC wei (6 decimals)
      * @param _maxReferrers Maximum number of referrers allowed per ticket purchase
      * @param _entropyBaseGasLimit Gas limit for entropy provider callback (uint32)
@@ -308,8 +287,10 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
         uint32 _entropyBaseGasLimit
     ) Ownable(msg.sender) {
         drawingDurationInSeconds = _drawingDurationInSeconds;
-        normalBallMax = _normalBallMax;
+        //@audit-low _normalBallMax >= NORMAL_BALL_COUNT and _normalBallMax <= 255, to keep shifts and packing safe.
+        normalBallMax = _normalBallMax; //@note there are no restrictions on this value. this value > 128 => panics
         bonusballMin = _bonusballMin;
+        //@audit-low lpEdgeTarget < PRECISE_UNIT and reserveRatio < PRECISE_UNIT
         lpEdgeTarget = _lpEdgeTarget;
         reserveRatio = _reserveRatio;
         referralFee = _referralFee;
@@ -320,7 +301,7 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
         maxReferrers = _maxReferrers;
         entropyBaseGasLimit = _entropyBaseGasLimit;
 
-        entropyVariableGasLimit = uint32(250000);
+        entropyVariableGasLimit = uint32(250000); //@note fixed value?
         protocolFeeAddress = msg.sender;
     }
 
@@ -362,25 +343,22 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * - Input validation for all parameters
      * - Safe USDC transfers with approval checks
      */
+    //@note OK
     function buyTickets(
         Ticket[] memory _tickets,
         address _recipient,
         address[] memory _referrers,
         uint256[] memory _referralSplit,
         bytes32 _source
-    )
-        external
-        nonReentrant
-        noEmergencyMode
-        returns (uint256[] memory ticketIds)
-    {
+    ) external nonReentrant noEmergencyMode returns (uint256[] memory ticketIds) {
         _validateBuyTicketInputs(_tickets, _recipient, _referrers, _referralSplit);
 
         DrawingState storage currentDrawingState = drawingState[currentDrawingId];
-        
+
         uint256 numTicketsBought = _tickets.length;
         uint256 ticketsValue = numTicketsBought * currentDrawingState.ticketPrice;
-        (uint256 referralFeeTotal, bytes32 referralSchemeId) = _validateAndTrackReferrals(_referrers, _referralSplit, ticketsValue);
+        (uint256 referralFeeTotal, bytes32 referralSchemeId) =
+            _validateAndTrackReferrals(_referrers, _referralSplit, ticketsValue);
 
         usdc.safeTransferFrom(msg.sender, address(this), ticketsValue);
 
@@ -389,7 +367,14 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
         currentDrawingState.lpEarnings += ticketsValue - referralFeeTotal;
         currentDrawingState.globalTicketsBought += numTicketsBought;
 
-        emit TicketOrderProcessed(msg.sender, _recipient, currentDrawingId, numTicketsBought, ticketsValue - referralFeeTotal, referralFeeTotal);
+        emit TicketOrderProcessed(
+            msg.sender,
+            _recipient,
+            currentDrawingId,
+            numTicketsBought,
+            ticketsValue - referralFeeTotal,
+            referralFeeTotal
+        );
     }
 
     /**
@@ -406,7 +391,7 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * @custom:effects
      * - Burns the ticket NFTs (prevents double-claiming)
      * - Transfers net USDC winnings to caller
-     * - If no referral scheme is set for the ticket, the referrer share of the winnings is added to current drawing's lpEarnings
+     * - If no referral scheme is set for the ticket, the referrer share of the winnings is added to current drawing's lpEarnings      //NOTE this is where i think the problem is
      * - Updates referral fee balances for associated referrers
      * - Calculates tier payouts based on number matches
      * @custom:security
@@ -415,9 +400,11 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * - Drawing completion verification
      * - Automatic NFT burning to prevent double claims
      */
+    //@note OK
+    //@audit-q whether users are allowed to claim winnings for a locked jackpot??
     function claimWinnings(uint256[] memory _userTicketIds) external nonReentrant {
         if (_userTicketIds.length == 0) revert JackpotErrors.NoTicketsToClaim();
-        
+
         uint256 totalClaimAmount = 0;
         for (uint256 i = 0; i < _userTicketIds.length; i++) {
             uint256 ticketId = _userTicketIds[i];
@@ -427,23 +414,22 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
             if (drawingId >= currentDrawingId) revert JackpotErrors.TicketFromFutureDrawing();
 
             DrawingState memory winningDrawingState = drawingState[drawingId];
-            uint256 tierId = _calculateTicketTierId(ticketInfo.packedTicket, winningDrawingState.winningTicket, winningDrawingState.ballMax);
-            jackpotNFT.burnTicket(ticketId);
-            
-            uint256 winningAmount = payoutCalculator.getTierPayout(drawingId, tierId);
-            uint256 referrerShare = _payReferrersWinnings(
-                ticketInfo.referralScheme,
-                winningAmount,
-                winningDrawingState.referralWinShare
+            uint256 tierId = _calculateTicketTierId(
+                ticketInfo.packedTicket, winningDrawingState.winningTicket, winningDrawingState.ballMax
             );
-            
+            jackpotNFT.burnTicket(ticketId);
+
+            uint256 winningAmount = payoutCalculator.getTierPayout(drawingId, tierId);
+            uint256 referrerShare =
+                _payReferrersWinnings(ticketInfo.referralScheme, winningAmount, winningDrawingState.referralWinShare);
+
             totalClaimAmount += winningAmount - referrerShare;
             emit TicketWinningsClaimed(
                 msg.sender,
                 drawingId,
                 ticketId,
-                tierId / 2,             // matches
-                (tierId % 2) == 1,      // bonusball match
+                tierId / 2, // matches
+                (tierId % 2) == 1, // bonusball match
                 winningAmount - referrerShare
             );
         }
@@ -453,7 +439,7 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
 
     /**
      * @notice Allows liquidity providers to deposit USDC into the prize pool
-     * @dev Deposits are processed immediately but are not added to the prize pool until the next drawing. 
+     * @dev Deposits are processed immediately but are not added to the prize pool until the next drawing.
      *      LP shares are calculated based on the accumulator at the end of the current drawing.
      *      If the LP has a previous deposit from an earlier drawing, shares are consolidated before processing the new deposit.
      * @param _amountToDeposit The amount of USDC to deposit (in wei, 6 decimals for USDC)
@@ -474,6 +460,8 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * - Pool cap validation to prevent over-deposits
      * - Safe USDC transfers with approval checks
      */
+    //@audit-low not following the CEI pattern
+    //@note OK
     function lpDeposit(uint256 _amountToDeposit) external nonReentrant noEmergencyMode {
         if (drawingState[currentDrawingId].jackpotLock) revert JackpotErrors.JackpotLocked();
         if (_amountToDeposit == 0) revert JackpotErrors.DepositAmountZero();
@@ -503,6 +491,7 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * - Share balance validation
      * - Prevents withdrawals during locked drawings
      */
+    //@note OK
     function initiateWithdraw(uint256 _amountToWithdrawInShares) external noEmergencyMode {
         if (drawingState[currentDrawingId].jackpotLock) revert JackpotErrors.JackpotLocked();
         if (_amountToWithdrawInShares == 0) revert JackpotErrors.WithdrawAmountZero();
@@ -528,6 +517,7 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * - Share-to-USDC conversion using verified accumulator values
      * - Safe USDC transfers
      */
+    //@note OK
     function finalizeWithdraw() external nonReentrant noEmergencyMode {
         uint256 withdrawableAmount = jackpotLPManager.processFinalizeWithdraw(currentDrawingId, msg.sender);
         usdc.safeTransfer(msg.sender, withdrawableAmount);
@@ -549,6 +539,7 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * - Only available in emergency mode
      * - Complete LP position removal
      */
+    //@note OK
     function emergencyWithdrawLP() external nonReentrant onlyEmergencyMode {
         uint256 withdrawableAmount = jackpotLPManager.emergencyWithdrawLP(currentDrawingId, msg.sender);
         usdc.safeTransfer(msg.sender, withdrawableAmount);
@@ -557,7 +548,7 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
     /**
      * @notice Allows ticket holders to receive refunds for their tickets from the current drawing during emergency mode
      * @dev Refunds tickets from the active drawing by burning the NFTs and transferring USDC back to holders.
-     *      Refund amount is the full ticket price for tickets without referrals, or ticket price minus 
+     *      Refund amount is the full ticket price for tickets without referrals, or ticket price minus
      *      referral fees for tickets purchased with referral schemes.
      *      Only tickets from the current drawing are eligible since past drawings have concluded normally.
      * @param _userTicketIds Array of ticket NFT IDs to refund from the current drawing
@@ -578,6 +569,7 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * - Current drawing restriction ensures only active tickets are refunded
      * - Batch processing reduces gas costs for multiple ticket refunds
      */
+    //@note OK
     function emergencyRefundTickets(uint256[] memory _userTicketIds) external nonReentrant onlyEmergencyMode {
         if (_userTicketIds.length == 0) revert JackpotErrors.NoTicketsProvided();
         uint256 totalRefundAmount = 0;
@@ -588,7 +580,8 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
             if (ticketInfo.drawingId != currentDrawingId) revert JackpotErrors.TicketNotEligibleForRefund();
             if (IERC721(address(jackpotNFT)).ownerOf(ticketId) != msg.sender) revert JackpotErrors.NotTicketOwner();
 
-            uint256 refundAmount = ticketInfo.referralScheme == bytes32(0) ? drawingState[ticketInfo.drawingId].ticketPrice 
+            uint256 refundAmount = ticketInfo.referralScheme == bytes32(0)
+                ? drawingState[ticketInfo.drawingId].ticketPrice
                 : drawingState[ticketInfo.drawingId].ticketPrice * (PRECISE_UNIT - referralFee) / PRECISE_UNIT;
 
             totalRefundAmount += refundAmount;
@@ -615,6 +608,7 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * - Balance validation before transfer
      * - Safe USDC transfers
      */
+    //@note OK
     function claimReferralFees() external nonReentrant {
         if (referralFees[msg.sender] == 0) revert JackpotErrors.NoReferralFeesToClaim();
         uint256 transferAmount = referralFees[msg.sender];
@@ -643,6 +637,7 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * - Entropy fee validation and refund mechanism
      * - Single execution per drawing via lock mechanism
      */
+    //@note OK
     function runJackpot() external payable nonReentrant noEmergencyMode {
         DrawingState storage currentDrawingState = drawingState[currentDrawingId];
         if (currentDrawingState.jackpotLock) revert JackpotErrors.JackpotLocked();
@@ -681,10 +676,7 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
         });
 
         entropy.requestAndCallbackScaledRandomness{value: fee}(
-            entropyGasLimit,
-            setRequests,
-            this.scaledEntropyCallback.selector,
-            bytes("")
+            entropyGasLimit, setRequests, this.scaledEntropyCallback.selector, bytes("")
         );
 
         emit JackpotRunRequested(currentDrawingId, entropyGasLimit, fee);
@@ -692,8 +684,8 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
 
     /**
      * @notice Callback function called by the entropy provider with random numbers
-     * @dev Processes the random numbers to determine the total amount of winning payouts across all prize tiers. 
-     *      Updates LP with new pool size by netting revenue from tickets sold during drawing, winning payouts, and deposits/withdrawals. 
+     * @dev Processes the random numbers to determine the total amount of winning payouts across all prize tiers.
+     *      Updates LP with new pool size by netting revenue from tickets sold during drawing, winning payouts, and deposits/withdrawals.
      *      Finally calculates the params for the next drawing (with a particular focus on calculating the new bonusball).
      *      Note: the first callback parameter is the provider sequence ID and is ignored by Jackpot.
      * @param _randomNumbers Array of arrays containing random numbers (5 normal balls + 1 bonusball)
@@ -714,11 +706,8 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * - Single execution per drawing (prevented by lock state)
      * - Comprehensive state updates in single transaction
      */
-    function scaledEntropyCallback(
-        bytes32,
-        uint256[][] memory _randomNumbers,
-        bytes memory
-    )
+    //@note OK
+    function scaledEntropyCallback(bytes32, uint256[][] memory _randomNumbers, bytes memory)
         external
         nonReentrant
         onlyEntropy
@@ -729,29 +718,31 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
         DrawingState storage currentDrawingState = drawingState[currentDrawingId];
         if (!currentDrawingState.jackpotLock) revert JackpotErrors.JackpotNotLocked();
 
-        (uint256 winningNumbers, uint256 drawingUserWinnings) = _calculateDrawingUserWinnings(currentDrawingState, _randomNumbers);
+        (uint256 winningNumbers, uint256 drawingUserWinnings) =
+            _calculateDrawingUserWinnings(currentDrawingState, _randomNumbers);
         currentDrawingState.winningTicket = winningNumbers;
 
         uint256 protocolFeeAmount = _transferProtocolFee(currentDrawingState.lpEarnings, drawingUserWinnings);
 
-        (
-            uint256 newLpValue,
-            uint256 newAccumulatorValue
-        ) = jackpotLPManager.processDrawingSettlement(
-            currentDrawingId,
-            currentDrawingState.lpEarnings,
-            drawingUserWinnings,
-            protocolFeeAmount
+        (uint256 newLpValue, uint256 newAccumulatorValue) = jackpotLPManager.processDrawingSettlement(
+            currentDrawingId, currentDrawingState.lpEarnings, drawingUserWinnings, protocolFeeAmount
         );
 
         _setNewDrawingState(newLpValue, currentDrawingState.drawingTime + drawingDurationInSeconds);
-        emit JackpotSettled(currentDrawingId - 1, currentDrawingState.globalTicketsBought, drawingUserWinnings, _randomNumbers[1][0].toUint8(), winningNumbers, newAccumulatorValue);
+        emit JackpotSettled(
+            currentDrawingId - 1,
+            currentDrawingState.globalTicketsBought,
+            drawingUserWinnings,
+            _randomNumbers[1][0].toUint8(),
+            winningNumbers,
+            newAccumulatorValue
+        );
     }
 
     // =============================================================
     //                       INITIALIZATION FUNCTIONS
     // =============================================================
-    
+
     /**
      * @notice Initializes the contract with external dependencies
      * @dev This is the first step in the contract initialization process. Must be called before initializeLPDeposits().
@@ -773,16 +764,14 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * - Zero address validation for all contracts
      * - Single initialization enforcement
      */
+    //@note OK
     function initialize(
         IERC20 _usdc,
         IJackpotLPManager _jackpotLPManager,
-        IJackpotTicketNFT _jackpotNFT, 
-        IScaledEntropyProvider _entropy, 
+        IJackpotTicketNFT _jackpotNFT,
+        IScaledEntropyProvider _entropy,
         IPayoutCalculator _payoutCalculator
-    )
-        external
-        onlyOwner
-    {
+    ) external onlyOwner {
         if (initialized) revert JackpotErrors.ContractAlreadyInitialized();
         if (_entropy == IScaledEntropyProvider(address(0))) revert JackpotErrors.ZeroAddress();
         if (_usdc == IERC20(address(0))) revert JackpotErrors.ZeroAddress();
@@ -817,6 +806,7 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * - Single execution enforcement
      * - Mathematical validation of pool cap calculation
      */
+    //@note OK
     function initializeLPDeposits(uint256 _governancePoolCap) external onlyOwner {
         if (!initialized) revert JackpotErrors.ContractNotInitialized();
         if (jackpotLPManager.getDrawingAccumulator(0) != 0) revert JackpotErrors.LPDepositsAlreadyInitialized();
@@ -849,15 +839,14 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * - Single execution enforcement
      * - Proper state transition validation
      */
+    //@note OK
     function initializeJackpot(uint256 _initialDrawingTime) external onlyOwner {
         if (jackpotLPManager.getDrawingAccumulator(0) == 0) revert JackpotErrors.LPDepositsNotInitialized();
         if (currentDrawingId != 0) revert JackpotErrors.JackpotAlreadyInitialized();
         if (jackpotLPManager.getLPDrawingState(0).pendingDeposits == 0) revert JackpotErrors.NoLPDeposits();
 
         allowTicketPurchases = true;
-        (
-            uint256 newLpValue,
-        ) = jackpotLPManager.processDrawingSettlement(0, 0, 0, 0);    // Drawing 0 and no winnings or lp earnings
+        (uint256 newLpValue,) = jackpotLPManager.processDrawingSettlement(0, 0, 0, 0); // Drawing 0 and no winnings or lp earnings
         _setNewDrawingState(newLpValue, _initialDrawingTime);
     }
 
@@ -883,12 +872,13 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * - Automatic LP pool cap recalculation maintains system integrity
      * - Pool size validation prevents system inconsistency
      */
+    //@note OK
     function setNormalBallMax(uint8 _normalBallMax) external onlyOwner {
         // Note: we do not need to check if _normalBallMax is greater than 255 because it is enforced by uint8 type
         uint8 oldNormalBallMax = normalBallMax;
         jackpotLPManager.setLPPoolCap(currentDrawingId, _calculateLpPoolCap(_normalBallMax));
         normalBallMax = _normalBallMax;
-        
+
         emit NormalBallMaxUpdated(currentDrawingId, oldNormalBallMax, _normalBallMax);
     }
 
@@ -902,10 +892,11 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * - Updates protocolFeeThreshold state variable
      * - Affects future protocol fee calculations
      */
+    //@note OK
     function setProtocolFeeThreshold(uint256 _protocolFeeThreshold) external onlyOwner {
         uint256 oldProtocolFeeThreshold = protocolFeeThreshold;
         protocolFeeThreshold = _protocolFeeThreshold;
-        
+
         emit ProtocolFeeThresholdUpdated(currentDrawingId, oldProtocolFeeThreshold, _protocolFeeThreshold);
     }
 
@@ -920,11 +911,12 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * - Updates protocolFee state variable
      * - Affects future protocol fee calculations
      */
+    //@note OK
     function setProtocolFee(uint256 _protocolFee) external onlyOwner {
         if (_protocolFee > MAX_PROTOCOL_FEE) revert JackpotErrors.InvalidProtocolFee();
         uint256 oldProtocolFee = protocolFee;
         protocolFee = _protocolFee;
-        
+
         emit ProtocolFeeUpdated(currentDrawingId, oldProtocolFee, _protocolFee);
     }
 
@@ -943,13 +935,14 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * - Automatic lpPoolCap recalculation maintains system integrity
      * - Pool size validation prevents system inconsistency
      */
+    //@note OK
     function setGovernancePoolCap(uint256 _governancePoolCap) external onlyOwner {
         if (_governancePoolCap == 0) revert JackpotErrors.InvalidGovernancePoolCap();
 
         uint256 oldGovernancePoolCap = governancePoolCap;
         governancePoolCap = _governancePoolCap;
         jackpotLPManager.setLPPoolCap(currentDrawingId, _calculateLpPoolCap(normalBallMax));
-        
+
         emit GovernancePoolCapUpdated(currentDrawingId, oldGovernancePoolCap, _governancePoolCap);
     }
 
@@ -966,11 +959,12 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * @custom:security
      * - Zero duration validation prevents system lock
      */
+    //@note OK
     function setDrawingDurationInSeconds(uint256 _drawingDurationInSeconds) external onlyOwner {
         if (_drawingDurationInSeconds == 0) revert JackpotErrors.InvalidDrawingDuration();
         uint256 oldDrawingDurationInSeconds = drawingDurationInSeconds;
         drawingDurationInSeconds = _drawingDurationInSeconds;
-        
+
         emit DrawingDurationUpdated(currentDrawingId, oldDrawingDurationInSeconds, _drawingDurationInSeconds);
     }
 
@@ -987,11 +981,12 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * @custom:security
      * - Zero value validation prevents invalid bonusball ranges
      */
+    //@note OK
     function setBonusballMin(uint8 _bonusballMin) external onlyOwner {
         if (_bonusballMin == 0) revert JackpotErrors.InvalidBonusballMin();
         uint8 oldBonusballMin = bonusballMin;
         bonusballMin = _bonusballMin;
-        
+
         emit BonusballMinUpdated(currentDrawingId, oldBonusballMin, _bonusballMin);
     }
 
@@ -1009,13 +1004,14 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * @custom:security
      * - Range validation ensures valid percentage values
      */
+    //@note OK
     function setLpEdgeTarget(uint256 _lpEdgeTarget) external onlyOwner {
         if (_lpEdgeTarget == 0 || _lpEdgeTarget >= PRECISE_UNIT) revert JackpotErrors.InvalidLpEdgeTarget();
         uint256 oldLpEdgeTarget = lpEdgeTarget;
         lpEdgeTarget = _lpEdgeTarget;
 
         jackpotLPManager.setLPPoolCap(currentDrawingId, _calculateLpPoolCap(normalBallMax));
-        
+
         emit LpEdgeTargetUpdated(currentDrawingId, oldLpEdgeTarget, _lpEdgeTarget);
     }
 
@@ -1033,13 +1029,14 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * @custom:security
      * - Upper bound validation prevents invalid ratios
      */
+    //@note OK
     function setReserveRatio(uint256 _reserveRatio) external onlyOwner {
         if (_reserveRatio >= PRECISE_UNIT) revert JackpotErrors.InvalidReserveRatio();
         uint256 oldReserveRatio = reserveRatio;
         reserveRatio = _reserveRatio;
 
         jackpotLPManager.setLPPoolCap(currentDrawingId, _calculateLpPoolCap(normalBallMax));
-        
+
         emit ReserveRatioUpdated(currentDrawingId, oldReserveRatio, _reserveRatio);
     }
 
@@ -1056,11 +1053,12 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * @custom:security
      * - Upper bound validation prevents excessive fees
      */
+    //@note OK
     function setReferralFee(uint256 _referralFee) external onlyOwner {
         if (_referralFee > PRECISE_UNIT) revert JackpotErrors.InvalidReferralFee();
         uint256 oldReferralFee = referralFee;
         referralFee = _referralFee;
-        
+
         emit ReferralFeeUpdated(currentDrawingId, oldReferralFee, _referralFee);
     }
 
@@ -1077,11 +1075,12 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * @custom:security
      * - Upper bound validation prevents excessive sharing
      */
+    //@note OK
     function setReferralWinShare(uint256 _referralWinShare) external onlyOwner {
         if (_referralWinShare > PRECISE_UNIT) revert JackpotErrors.InvalidReferralWinShare();
         uint256 oldReferralWinShare = referralWinShare;
         referralWinShare = _referralWinShare;
-        
+
         emit ReferralWinShareUpdated(currentDrawingId, oldReferralWinShare, _referralWinShare);
     }
 
@@ -1098,11 +1097,12 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * @custom:security
      * - Zero address validation prevents fee loss
      */
+    //@note OK
     function setProtocolFeeAddress(address _protocolFeeAddress) external onlyOwner {
         if (_protocolFeeAddress == address(0)) revert JackpotErrors.ZeroAddress();
         address oldProtocolFeeAddress = protocolFeeAddress;
         protocolFeeAddress = _protocolFeeAddress;
-        
+
         emit ProtocolFeeAddressUpdated(currentDrawingId, oldProtocolFeeAddress, _protocolFeeAddress);
     }
 
@@ -1124,12 +1124,13 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * - Automatic pool cap recalculation maintains system integrity
      * - Pool size validation prevents system inconsistency
      */
+    //@note OK
     function setTicketPrice(uint256 _ticketPrice) external onlyOwner {
         if (_ticketPrice == 0) revert JackpotErrors.InvalidTicketPrice();
         uint256 oldTicketPrice = ticketPrice;
         ticketPrice = _ticketPrice;
         jackpotLPManager.setLPPoolCap(currentDrawingId, _calculateLpPoolCap(normalBallMax));
-        
+
         emit TicketPriceUpdated(currentDrawingId, oldTicketPrice, _ticketPrice);
     }
 
@@ -1146,11 +1147,12 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * @custom:security
      * - Zero value validation ensures referrals remain functional
      */
+    //@note OK
     function setMaxReferrers(uint256 _maxReferrers) external onlyOwner {
         if (_maxReferrers == 0) revert JackpotErrors.InvalidMaxReferrers();
         uint256 oldMaxReferrers = maxReferrers;
         maxReferrers = _maxReferrers;
-        
+
         emit MaxReferrersUpdated(currentDrawingId, oldMaxReferrers, _maxReferrers);
     }
 
@@ -1168,6 +1170,7 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * - Zero address validation prevents calculation failures
      * - Contract interface compatibility assumed
      */
+    //@note OK
     function setPayoutCalculator(IPayoutCalculator _payoutCalculator) external onlyOwner {
         if (_payoutCalculator == IPayoutCalculator(address(0))) revert JackpotErrors.ZeroAddress();
         IPayoutCalculator oldPayoutCalculator = payoutCalculator;
@@ -1190,6 +1193,7 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * - Zero address validation prevents drawing failures
      * - Contract interface compatibility assumed
      */
+    //@note OK
     function setEntropy(IScaledEntropyProvider _entropy) external onlyOwner {
         if (_entropy == IScaledEntropyProvider(address(0))) revert JackpotErrors.ZeroAddress();
         IScaledEntropyProvider oldEntropy = entropy;
@@ -1208,10 +1212,11 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * - Updates entropyBaseGasLimit state variable
      * - Affects future entropy requests
      */
+    //@note OK
     function setEntropyBaseGasLimit(uint32 _entropyBaseGasLimit) external onlyOwner {
         uint32 oldEntropyBaseGasLimit = entropyBaseGasLimit;
         entropyBaseGasLimit = _entropyBaseGasLimit;
-        
+
         emit EntropyBaseGasLimitUpdated(currentDrawingId, oldEntropyBaseGasLimit, _entropyBaseGasLimit);
     }
 
@@ -1226,10 +1231,11 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * - Updates entropyVariableGasLimit state variable
      * - Affects future entropy requests
      */
+    //@note OK
     function setEntropyVariableGasLimit(uint32 _entropyVariableGasLimit) external onlyOwner {
         uint32 oldEntropyVariableGasLimit = entropyVariableGasLimit;
         entropyVariableGasLimit = _entropyVariableGasLimit;
-        
+
         emit EntropyVariableGasLimitUpdated(currentDrawingId, oldEntropyVariableGasLimit, _entropyVariableGasLimit);
     }
 
@@ -1247,6 +1253,7 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * - Owner-only access
      * - Single activation enforcement
      */
+    //@note OK
     function enableEmergencyMode() external onlyOwner {
         if (emergencyMode) revert JackpotErrors.EmergencyModeAlreadyEnabled();
         emergencyMode = true;
@@ -1267,6 +1274,7 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * - Owner-only access
      * - State validation prevents invalid transitions
      */
+    //@note OK
     function disableEmergencyMode() external onlyOwner {
         if (!emergencyMode) revert JackpotErrors.EmergencyModeAlreadyDisabled();
         emergencyMode = false;
@@ -1286,6 +1294,7 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * - Owner-only access for emergency control
      * - State validation prevents double-locking
      */
+    //@note OK
     function lockJackpot() external onlyOwner {
         if (drawingState[currentDrawingId].jackpotLock) revert JackpotErrors.JackpotLocked();
         _lockJackpot();
@@ -1304,6 +1313,7 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * - Owner-only access for emergency control
      * - State validation prevents invalid unlocking
      */
+    //@note OK
     function unlockJackpot() external onlyOwner {
         if (!drawingState[currentDrawingId].jackpotLock) revert JackpotErrors.JackpotNotLocked();
         _unlockJackpot();
@@ -1325,7 +1335,7 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
     function enableTicketPurchases() external onlyOwner {
         if (allowTicketPurchases) revert JackpotErrors.TicketPurchasesAlreadyEnabled();
         allowTicketPurchases = true;
-        
+
         emit TicketPurchasesEnabled(currentDrawingId);
     }
 
@@ -1342,10 +1352,11 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * - Owner-only access
      * - State validation prevents redundant disabling
      */
+    //@note OK
     function disableTicketPurchases() external onlyOwner {
         if (!allowTicketPurchases) revert JackpotErrors.TicketPurchasesAlreadyDisabled();
         allowTicketPurchases = false;
-        
+
         emit TicketPurchasesDisabled(currentDrawingId);
     }
 
@@ -1380,10 +1391,12 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * @param _tickets Array of tickets to check
      * @return Array of booleans indicating if each ticket was purchased
      */
+    //@note OK
     function checkIfTicketsBought(uint256 _drawingId, Ticket[] memory _tickets) external view returns (bool[] memory) {
         bool[] memory isBought = new bool[](_tickets.length);
         for (uint256 i = 0; i < _tickets.length; i++) {
-            isBought[i] = TicketComboTracker.isDuplicate(drawingEntries[_drawingId], _tickets[i].normals, _tickets[i].bonusball);
+            isBought[i] =
+                TicketComboTracker.isDuplicate(drawingEntries[_drawingId], _tickets[i].normals, _tickets[i].bonusball);
         }
         return isBought;
     }
@@ -1398,12 +1411,16 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * @param _bonusball Bonusball number to match
      * @return ComboCount struct containing match statistics
      */
-    function getSubsetCount(uint256 _drawingId, uint8[] memory _normals, uint8 _bonusball) external view returns (TicketComboTracker.ComboCount memory) {
+    //@note OK
+    function getSubsetCount(uint256 _drawingId, uint8[] memory _normals, uint8 _bonusball)
+        external
+        view
+        returns (TicketComboTracker.ComboCount memory)
+    {
         uint256 subset = TicketComboTracker.toNormalsBitVector(_normals, drawingState[_drawingId].ballMax);
-        return drawingEntries[_drawingId].comboCounts[ _bonusball][subset];
+        return drawingEntries[_drawingId].comboCounts[_bonusball][subset];
     }
 
-    
     /**
      * @notice Unpacks a packed ticket into normal numbers and bonusball
      * @dev Decodes the bit-packed ticket format used by the protocol:
@@ -1419,7 +1436,12 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * @custom:security
      * - Assumes `_packedTicket` follows the protocol's packing scheme
      */
-    function getUnpackedTicket(uint256 _drawingId, uint256 _packedTicket) external view returns (uint8[] memory normals, uint8 bonusball) {
+    //@note OK
+    function getUnpackedTicket(uint256 _drawingId, uint256 _packedTicket)
+        external
+        view
+        returns (uint8[] memory normals, uint8 bonusball)
+    {
         return TicketComboTracker.unpackTicket(_packedTicket, drawingState[_drawingId].ballMax);
     }
 
@@ -1435,12 +1457,15 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * @custom:security
      * - Assumes tickets exist and their drawings have valid `winningTicket` values
      */
+    //@note OK
     function getTicketTierIds(uint256[] memory _ticketIds) external view returns (uint256[] memory tierIds) {
         tierIds = new uint256[](_ticketIds.length);
         for (uint256 i = 0; i < _ticketIds.length; i++) {
             IJackpotTicketNFT.TrackedTicket memory ticket = jackpotNFT.getTicketInfo(_ticketIds[i]);
             DrawingState memory ticketDrawingState = drawingState[ticket.drawingId];
-            tierIds[i] = _calculateTicketTierId(ticket.packedTicket, ticketDrawingState.winningTicket, ticketDrawingState.ballMax);
+            tierIds[i] = _calculateTicketTierId(
+                ticket.packedTicket, ticketDrawingState.winningTicket, ticketDrawingState.ballMax
+            );
         }
         return tierIds;
     }
@@ -1458,6 +1483,7 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
      * @custom:security
      * - Depends on provider pricing; fee may change over time or with gas limit parameter updates
      */
+    //@note OK
     function getEntropyCallbackFee() external view returns (uint256 fee) {
         uint32 entropyGasLimit = _calculateEntropyGasLimit(drawingState[currentDrawingId].bonusballMax);
         return entropy.getFee(entropyGasLimit);
@@ -1466,15 +1492,18 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
     // =============================================================
     //                      INTERNAL FUNCTIONS
     // =============================================================
+    //@note OK
     function _calculateLpPoolCap(uint256 _normalBallMax) internal view returns (uint256) {
         // We use MAX_BIT_VECTOR_SIZE because that's the max number that can be packed in a uint256 bit vector
-        uint256 maxAllowableTickets = Combinations.choose(_normalBallMax, NORMAL_BALL_COUNT) * (MAX_BIT_VECTOR_SIZE - _normalBallMax);
+        uint256 maxAllowableTickets =
+            Combinations.choose(_normalBallMax, NORMAL_BALL_COUNT) * (MAX_BIT_VECTOR_SIZE - _normalBallMax);
         uint256 maxPrizePool = maxAllowableTickets * ticketPrice * (PRECISE_UNIT - lpEdgeTarget) / PRECISE_UNIT;
 
         // We need to make sure that the lpPoolCap is not greater than the governance pool cap
         return Math.min(maxPrizePool * PRECISE_UNIT / (PRECISE_UNIT - reserveRatio), governancePoolCap);
     }
 
+    //@note OK
     function _setNewDrawingState(uint256 _newLpValue, uint256 _nextDrawingTime) internal {
         currentDrawingId++;
 
@@ -1488,14 +1517,16 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
         newDrawingState.globalTicketsBought = 0;
         newDrawingState.lpEarnings = 0;
         newDrawingState.ballMax = normalBallMax;
-        newDrawingState.drawingTime = _nextDrawingTime;
+        //@note Enforce _nextDrawingTime > block.timestamp and >= lastDrawingTime + drawingDuration to avoid mis-scheduling.
+        newDrawingState.drawingTime = _nextDrawingTime; //report-written there are no checks on the monotonocity of time
         newDrawingState.jackpotLock = false;
 
         uint256 combosPerBonusball = Combinations.choose(normalBallMax, NORMAL_BALL_COUNT);
         uint256 minNumberTickets = newPrizePool * PRECISE_UNIT / ((PRECISE_UNIT - lpEdgeTarget) * ticketPrice);
+        //@note minNumberTickets = bonusBallMax [1,2,3,...bonusBallMax] *  combosPerBonusball
         uint8 newBonusball = uint8(Math.max(bonusballMin, Math.ceilDiv(minNumberTickets, combosPerBonusball)));
         newDrawingState.bonusballMax = newBonusball;
-        
+
         TicketComboTracker.init(drawingEntries[currentDrawingId], normalBallMax, newBonusball, NORMAL_BALL_COUNT);
 
         // Note: we want to set this when we set the payouts because it is important to the product that the targeted
@@ -1516,6 +1547,7 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
         );
     }
 
+    //@note OK
     function _validateBuyTicketInputs(
         Ticket[] memory _tickets,
         address _recipient,
@@ -1531,14 +1563,12 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
         if (_referrers.length > maxReferrers) revert JackpotErrors.TooManyReferrers();
     }
 
+    //@note OK
     function _validateAndTrackReferrals(
         address[] memory _referrers,
         uint256[] memory _referralSplit,
         uint256 _ticketsValue
-    )
-        internal
-        returns (uint256 referralFeeTotal, bytes32 referralSchemeId)
-    {
+    ) internal returns (uint256 referralFeeTotal, bytes32 referralSchemeId) {
         if (_referrers.length > 0) {
             // Calculate total amount of referral fees for the order
             referralFeeTotal = _ticketsValue * referralFee / PRECISE_UNIT;
@@ -1558,41 +1588,44 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
             if (referralSplitSum != PRECISE_UNIT) revert JackpotErrors.ReferralSplitSumInvalid();
             // If the referral scheme id is not already in the mapping, add it
             if (referralSchemes[referralSchemeId].referrers.length == 0) {
-                referralSchemes[referralSchemeId] = ReferralScheme({
-                    referrers: _referrers,
-                    referralSplit: _referralSplit
-                });
+                referralSchemes[referralSchemeId] =
+                    ReferralScheme({referrers: _referrers, referralSplit: _referralSplit});
 
                 emit ReferralSchemeAdded(referralSchemeId, _referrers, _referralSplit);
             }
         }
     }
 
+    //@note OK
     function _validateAndStoreTickets(
         DrawingState storage _currentDrawingState,
         Ticket[] memory _tickets,
         address _recipient,
         bytes32 _referralSchemeId,
         bytes32 _source
-    )
-        internal
-        returns (uint256[] memory ticketIds)
-    {
+    ) internal returns (uint256[] memory ticketIds) {
         TicketComboTracker.Tracker storage currentDrawingEntries = drawingEntries[currentDrawingId];
 
         ticketIds = new uint256[](_tickets.length);
         for (uint256 i = 0; i < _tickets.length; i++) {
             Ticket memory ticket = _tickets[i];
             if (ticket.normals.length != NORMAL_BALL_COUNT) revert JackpotErrors.InvalidNormalsCount();
-            if (ticket.bonusball > _currentDrawingState.bonusballMax || ticket.bonusball == 0) revert JackpotErrors.InvalidBonusball();
+            if (ticket.bonusball > _currentDrawingState.bonusballMax || ticket.bonusball == 0) {
+                revert JackpotErrors.InvalidBonusball();
+            }
 
             // Validation to make sure that normals are in range and no duplicates take place here
-            (uint256 packedTicket, bool isDup) = TicketComboTracker.insert(currentDrawingEntries, ticket.normals, _tickets[i].bonusball);
-            uint256 ticketId = uint256(keccak256(abi.encode(currentDrawingId, _currentDrawingState.globalTicketsBought + i + 1, packedTicket)));
+            (uint256 packedTicket, bool isDup) =
+                TicketComboTracker.insert(currentDrawingEntries, ticket.normals, _tickets[i].bonusball); //@note can write here ticket.bonusball
+            uint256 ticketId = uint256(
+                keccak256(abi.encode(currentDrawingId, _currentDrawingState.globalTicketsBought + i + 1, packedTicket))
+            );
             ticketIds[i] = ticketId;
 
             jackpotNFT.mintTicket(_recipient, ticketId, currentDrawingId, packedTicket, _referralSchemeId);
 
+            //@audit-q why the referrer fee is not deducted for duplicate tickets?
+            //@note only removing the edge part from the ticket price and adding the referral part to the pool
             if (isDup) {
                 // We need to add to the prize pool because it is like an additional ticket is being minted. In order to guarantee the LP
                 // edge we need to make sure that only (1-lpEdgeTarget) * ticketPrice is added to the prize pool.
@@ -1600,32 +1633,22 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
             }
 
             emit TicketPurchased(
-                _recipient,
-                currentDrawingId,
-                _source,
-                ticketId,
-                ticket.normals,
-                ticket.bonusball,
-                _referralSchemeId
+                _recipient, currentDrawingId, _source, ticketId, ticket.normals, ticket.bonusball, _referralSchemeId
             );
         }
     }
 
+    //@note OK
     function _calculateDrawingUserWinnings(
         DrawingState storage _currentDrawingState,
         uint256[][] memory _unPackedWinningNumbers
-    )
-        internal
-        returns(uint256 winningNumbers, uint256 drawingUserWinnings)
-    {
+    ) internal returns (uint256 winningNumbers, uint256 drawingUserWinnings) {
         // Note that the total amount of winning tickets for a given tier is the sum of result and dupResult
-        (
-            uint256 winningTicket,
-            uint256[] memory uniqueResult,
-            uint256[] memory dupResult
-        ) = TicketComboTracker.countTierMatchesWithBonusball(drawingEntries[currentDrawingId],
-            _unPackedWinningNumbers[0].toUint8Array(),      // normal balls
-            _unPackedWinningNumbers[1][0].toUint8()         // bonusball
+        (uint256 winningTicket, uint256[] memory uniqueResult, uint256[] memory dupResult) = TicketComboTracker
+            .countTierMatchesWithBonusball(
+            drawingEntries[currentDrawingId],
+            _unPackedWinningNumbers[0].toUint8Array(), // normal balls
+            _unPackedWinningNumbers[1][0].toUint8() // bonusball
         );
 
         winningNumbers = winningTicket;
@@ -1640,23 +1663,24 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
         );
 
         emit WinnersCalculated(
-            currentDrawingId,
-            _unPackedWinningNumbers[0],
-            _unPackedWinningNumbers[1][0],
-            uniqueResult,
-            dupResult
+            currentDrawingId, _unPackedWinningNumbers[0], _unPackedWinningNumbers[1][0], uniqueResult, dupResult
         );
     }
 
-    function _calculateTicketTierId(uint256 _ticketNumbers, uint256 _winningNumbers, uint256 _normalBallMax) internal pure returns (uint256) {
+    //@note OK
+    function _calculateTicketTierId(uint256 _ticketNumbers, uint256 _winningNumbers, uint256 _normalBallMax)
+        internal
+        pure
+        returns (uint256)
+    {
         uint256 matches = 0;
-        
+
         // Count matching normal numbers by checking overlapping bits
         uint256 matchingBits = _ticketNumbers & _winningNumbers;
-        
+
         // Count the number of set bits (matches)
         matches = LibBit.popCount(matchingBits);
-        
+
         // Extract bonusball from both ticket and winning numbers
         // Bonusball is stored in the highest bits after the normal numbers
         uint256 ticketBonusball = _ticketNumbers >> (_normalBallMax + 1);
@@ -1668,11 +1692,8 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
         return 2 * (matches - bonusballMatch) + bonusballMatch;
     }
 
-    function _payReferrersWinnings(
-        bytes32 _referralSchemeId,
-        uint256 _winningAmount,
-        uint256 _referralWinShare
-    )
+    //@note OK
+    function _payReferrersWinnings(bytes32 _referralSchemeId, uint256 _winningAmount, uint256 _referralWinShare)
         internal
         returns (uint256)
     {
@@ -1680,6 +1701,8 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
         // If referrer scheme is empty then the referrer share goes to LPs so we just add the amount to lpEarnings
         // in order to make sure our system accounts for it
         if (_referralSchemeId == bytes32(0)) {
+            //@audit-q these shares are going to the LPEarnings of current draw not to the winning draw
+            //@note need to see how LPs claim their LPEarnings
             drawingState[currentDrawingId].lpEarnings += referrerShare;
             emit LpEarningsUpdated(currentDrawingId, referrerShare);
             return referrerShare;
@@ -1697,10 +1720,8 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
         return referrerShare;
     }
 
-    function _transferProtocolFee(
-        uint256 _lpEarnings,
-        uint256 _drawingUserWinnings
-    )
+    //@note OK
+    function _transferProtocolFee(uint256 _lpEarnings, uint256 _drawingUserWinnings)
         internal
         returns (uint256 protocolFeeAmount)
     {
@@ -1708,7 +1729,7 @@ contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
             protocolFeeAmount = (_lpEarnings - _drawingUserWinnings - protocolFeeThreshold) * protocolFee / PRECISE_UNIT;
             usdc.safeTransfer(protocolFeeAddress, protocolFeeAmount);
         }
-
+        //report-written why emit this event for protocolFeeAmount = 0
         emit ProtocolFeeCollected(currentDrawingId, protocolFeeAmount);
     }
 

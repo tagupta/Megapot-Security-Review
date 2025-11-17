@@ -11,7 +11,7 @@ On the date above, in accordance with the Business Source License, use of this s
 
 pragma solidity ^0.8.28;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract MockDepository {
     IERC20 usdc;
@@ -20,7 +20,7 @@ contract MockDepository {
         usdc = IERC20(_usdc);
     }
 
-    function depositErc20(address depositor, address token, uint256 amount, bytes32 /*id*/) external {
+    function depositErc20(address depositor, address token, uint256 amount, bytes32 /*id*/ ) external {
         usdc.transferFrom(depositor, address(this), amount);
     }
 }

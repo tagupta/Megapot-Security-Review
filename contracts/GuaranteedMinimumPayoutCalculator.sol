@@ -12,11 +12,11 @@ For licensing inquiries: legal@coordinationlabs.com
 
 pragma solidity ^0.8.28;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-import { Combinations } from "./lib/Combinations.sol";
-import { IJackpot } from "./interfaces/IJackpot.sol";
-import { IPayoutCalculator } from "./interfaces/IPayoutCalculator.sol";
+import {Combinations} from "./lib/Combinations.sol";
+import {IJackpot} from "./interfaces/IJackpot.sol";
+import {IPayoutCalculator} from "./interfaces/IPayoutCalculator.sol";
 
 /**
  * @title GuaranteedMinimumPayoutCalculator
@@ -29,7 +29,6 @@ import { IPayoutCalculator } from "./interfaces/IPayoutCalculator.sol";
  *      - Supports owner-configurable payout parameters that can be updated between drawings
  */
 contract GuaranteedMinimumPayoutCalculator is IPayoutCalculator, Ownable {
-
     // =============================================================
     //                          STRUCTS
     // =============================================================
@@ -61,10 +60,10 @@ contract GuaranteedMinimumPayoutCalculator is IPayoutCalculator, Ownable {
     // =============================================================
     //                          STATE VARIABLES
     // =============================================================
-    
+
     // Note:drawingId --> tierId (matches*2 + {1 if bonusball match}) → tier payout
-    mapping(uint256=>DrawingTierInfo) public drawingTierInfo;
-    mapping(uint256=>mapping(uint256 => uint256)) tierPayouts;
+    mapping(uint256 => DrawingTierInfo) public drawingTierInfo;
+    mapping(uint256 => mapping(uint256 => uint256)) tierPayouts; //@note drawingID => tierID => tierPayout
 
     // Must be 12 elements long (matches(0,1,2,3,4,5) * bonusball(0,1))
     // Allocation of remaining prize pool after minimum payout is accounted for
@@ -79,7 +78,7 @@ contract GuaranteedMinimumPayoutCalculator is IPayoutCalculator, Ownable {
     // =============================================================
     //                          MODIFIERS
     // =============================================================
-    
+
     modifier onlyJackpot() {
         if (msg.sender != address(jackpot)) revert UnauthorizedCaller();
         _;
@@ -88,7 +87,7 @@ contract GuaranteedMinimumPayoutCalculator is IPayoutCalculator, Ownable {
     // =============================================================
     //                          CONSTRUCTOR
     // =============================================================
-    
+
     /**
      * @notice Initializes the GuaranteedMinimumPayoutCalculator with payout configuration
      * @dev Sets up the connection to the Jackpot contract and initial payout parameters.
@@ -164,6 +163,7 @@ contract GuaranteedMinimumPayoutCalculator is IPayoutCalculator, Ownable {
      * - Duplicate winners included in denominator to prevent under-collateralization
      * - Guards against underflow by disabling minimum payouts when insufficient pool remains
      */
+    //@note OK
     function calculateAndStoreDrawingUserWinnings(
         uint256 _drawingId,
         uint256 _prizePool,
@@ -171,11 +171,7 @@ contract GuaranteedMinimumPayoutCalculator is IPayoutCalculator, Ownable {
         uint8 _bonusballMax,
         uint256[] memory _uniqueResult,
         uint256[] memory _dupResult
-    )
-        external
-        onlyJackpot
-        returns (uint256 totalPayout)
-    {   
+    ) external onlyJackpot returns (uint256 totalPayout) {
         DrawingTierInfo storage tierInfo = drawingTierInfo[_drawingId];
 
         // First calculate the total number of winners for each tier including duplicates and use that to determine guaranteed
@@ -196,15 +192,21 @@ contract GuaranteedMinimumPayoutCalculator is IPayoutCalculator, Ownable {
             // a tier is the total amount of winning tickets available for that tier plus any duplicate winners from that tier. The logic
             // here is that some of the non-duplicate winners are held by LPs and some are held by users. All of the duplicate winners
             // are held by users.
-            uint256 tierWinningTickets = _calculateTierTotalWinningCombos(matches, _normalMax, _bonusballMax, i % 2 == 1) + _dupResult[i];
-            tierWinners[i] = tierWinningTickets;
+            //@note _calculateTierTotalWinningCombos(matches, _normalMax, _bonusballMax, i % 2 == 1) => All possible winning combinations for that tier (including user + LP + unbought tickets)
+            //@note So instead of counting actual bought user tickets, it’s counting the full theoretical set of winning combinations, then adding the extra “duplicate” tickets on top.
+            //@audit-q let's try to inflate the number and see if it can be possible to cause griefing attack
+            uint256 tierWinningTickets =
+                _calculateTierTotalWinningCombos(matches, _normalMax, _bonusballMax, i % 2 == 1) + _dupResult[i];
+            tierWinners[i] = tierWinningTickets; //@note including all sorts of tickets - LP bought, user bought + unbought tickets
             if (tierInfo.minPayoutTiers[i]) {
                 minimumPayoutAllocation += tierWinningTickets * tierInfo.minPayout;
             }
         }
-        
+
         // Only use minimum payouts if the premium tier minimum allocation + minimum payout allocation is less than the prize pool
-        bool useMinimumPayouts = ((_prizePool * tierInfo.premiumTierMinAllocation / PRECISE_UNIT) + minimumPayoutAllocation) < _prizePool;
+        //@note tierInfo.premiumTierMinAllocation globally assigned value for all tiers
+        bool useMinimumPayouts =
+            ((_prizePool * tierInfo.premiumTierMinAllocation / PRECISE_UNIT) + minimumPayoutAllocation) < _prizePool;
 
         totalPayout = _calculateAndStoreTierPayouts(
             _drawingId,
@@ -233,6 +235,7 @@ contract GuaranteedMinimumPayoutCalculator is IPayoutCalculator, Ownable {
      * - Access restricted to Jackpot contract
      * - Ensures drawing payout consistency regardless of future changes
      */
+    //@note OK
     function setDrawingTierInfo(uint256 _drawingId) external onlyJackpot {
         drawingTierInfo[_drawingId] = DrawingTierInfo({
             minPayout: minimumPayout,
@@ -245,7 +248,7 @@ contract GuaranteedMinimumPayoutCalculator is IPayoutCalculator, Ownable {
     // =============================================================
     //                        ADMIN FUNCTIONS
     // =============================================================
-    
+
     /**
      * @notice Updates the base minimum payout amount
      * @dev Changes the guaranteed minimum payout for all eligible tiers in future drawings.
@@ -260,10 +263,11 @@ contract GuaranteedMinimumPayoutCalculator is IPayoutCalculator, Ownable {
      * @custom:security
      * - Owner-only access restriction
      */
+    //@note OK
     function setMinimumPayout(uint256 _minimumPayout) external onlyOwner {
         minimumPayout = _minimumPayout;
     }
-    
+
     /**
      * @notice Updates which tiers are eligible for minimum guaranteed payouts
      * @dev Configures which of the 12 tiers receive minimum payout guarantees in future drawings.
@@ -281,6 +285,7 @@ contract GuaranteedMinimumPayoutCalculator is IPayoutCalculator, Ownable {
      * - Owner-only access restriction
      * - Array length validation
      */
+    //@note OK
     function setMinPayoutTiers(bool[TOTAL_TIER_COUNT] memory _minPayoutTiers) external onlyOwner {
         minPayoutTiers = _minPayoutTiers;
     }
@@ -289,7 +294,7 @@ contract GuaranteedMinimumPayoutCalculator is IPayoutCalculator, Ownable {
      * @notice Updates the minimum allocation of the prize pool reserved for premium tier distribution
      * @dev Sets the minimum percentage of the total prize pool that must be allocated to premium tiers.
      *      This ensures premium tiers receive adequate funding even when minimum payouts consume most of the pool.
-     *      The allocation is enforced during payout calculations by making sure the minimum payout allocation + 
+     *      The allocation is enforced during payout calculations by making sure the minimum payout allocation +
      *      minimum premium allocation is less than the prize pool. If this equality fails then minimum payouts
      *      are disabled and the entire prize pool is distributed to the premium tiers.
      * @param _premiumTierMinAllocation Minimum allocation percentage in PRECISE_UNIT scale (e.g., 0.1e18 = 10%)
@@ -306,6 +311,7 @@ contract GuaranteedMinimumPayoutCalculator is IPayoutCalculator, Ownable {
      * - Upper bound validation prevents invalid allocation percentages
      * - Ensures balanced distribution between guaranteed minimums and premium rewards
      */
+    //@note OK
     function setPremiumTierMinAllocation(uint256 _premiumTierMinAllocation) external onlyOwner {
         if (_premiumTierMinAllocation > PRECISE_UNIT) revert InvalidPremiumTierMinimumAllocation();
         premiumTierMinAllocation = _premiumTierMinAllocation;
@@ -330,6 +336,7 @@ contract GuaranteedMinimumPayoutCalculator is IPayoutCalculator, Ownable {
      * - Weight sum validation ensures complete allocation
      * - Array length validation
      */
+    //@note OK
     function setPremiumTierWeights(uint256[TOTAL_TIER_COUNT] memory _premiumTierWeights) external onlyOwner {
         _setPremiumTierWeights(_premiumTierWeights);
     }
@@ -337,7 +344,7 @@ contract GuaranteedMinimumPayoutCalculator is IPayoutCalculator, Ownable {
     // =============================================================
     //                        VIEW FUNCTIONS
     // =============================================================
-    
+
     /**
      * @notice Returns the calculated payout amount for a specific tier in a drawing
      * @dev Retrieves the final payout amount per winning ticket for the specified tier.
@@ -346,6 +353,7 @@ contract GuaranteedMinimumPayoutCalculator is IPayoutCalculator, Ownable {
      * @param _tierId Tier to query (0-11, calculated as matches*2 + bonusballMatch)
      * @return Payout amount per winning ticket for the tier (in USDC wei)
      */
+    //@note OK
     function getTierPayout(uint256 _drawingId, uint256 _tierId) external view returns (uint256) {
         return tierPayouts[_drawingId][_tierId];
     }
@@ -357,6 +365,7 @@ contract GuaranteedMinimumPayoutCalculator is IPayoutCalculator, Ownable {
      * @param _drawingId Drawing to query
      * @return Array of payout amounts for all tiers (12 elements, in USDC wei)
      */
+    //@note OK
     function getDrawingTierPayouts(uint256 _drawingId) external view returns (uint256[TOTAL_TIER_COUNT] memory) {
         uint256[TOTAL_TIER_COUNT] memory drawingTierPayouts;
         for (uint256 i = 0; i < TOTAL_TIER_COUNT; i++) {
@@ -371,6 +380,7 @@ contract GuaranteedMinimumPayoutCalculator is IPayoutCalculator, Ownable {
      *      This reflects the current configuration, not necessarily what was used for past drawings.
      * @return Boolean array indicating minimum payout eligibility for each tier (12 elements)
      */
+    //@note OK
     function getMinPayoutTiers() external view returns (bool[TOTAL_TIER_COUNT] memory) {
         return minPayoutTiers;
     }
@@ -381,6 +391,7 @@ contract GuaranteedMinimumPayoutCalculator is IPayoutCalculator, Ownable {
      *      This reflects the current configuration, not necessarily what was used for past drawings.
      * @return Array of premium pool allocation weights (12 elements, sum to PRECISE_UNIT)
      */
+    //@note OK
     function getPremiumTierWeights() external view returns (uint256[TOTAL_TIER_COUNT] memory) {
         return premiumTierWeights;
     }
@@ -392,6 +403,7 @@ contract GuaranteedMinimumPayoutCalculator is IPayoutCalculator, Ownable {
      * @param _drawingId Drawing to query
      * @return DrawingTierInfo struct containing minimum payout, tier eligibility, and premium weights
      */
+    //@note OK
     function getDrawingTierInfo(uint256 _drawingId) external view returns (DrawingTierInfo memory) {
         return drawingTierInfo[_drawingId];
     }
@@ -399,6 +411,7 @@ contract GuaranteedMinimumPayoutCalculator is IPayoutCalculator, Ownable {
     // =============================================================
     //                        INTERNAL FUNCTIONS
     // =============================================================
+    //@note OK
     function _setPremiumTierWeights(uint256[TOTAL_TIER_COUNT] memory _premiumTierWeights) internal {
         uint256 tierWeightSum = 0;
         for (uint256 i = 0; i < TOTAL_TIER_COUNT; i++) {
@@ -409,6 +422,7 @@ contract GuaranteedMinimumPayoutCalculator is IPayoutCalculator, Ownable {
         premiumTierWeights = _premiumTierWeights;
     }
 
+    //@note OK
     function _calculateAndStoreTierPayouts(
         uint256 _drawingId,
         uint256 _remainingPrizePool,
@@ -416,41 +430,39 @@ contract GuaranteedMinimumPayoutCalculator is IPayoutCalculator, Ownable {
         uint256[TOTAL_TIER_COUNT] memory _tierWinners,
         uint256[] memory _uniqueResult,
         uint256[] memory _dupResult
-    )
-        internal
-        returns(uint256 totalPayout)
-    {
+    ) internal returns (uint256 totalPayout) {
         DrawingTierInfo storage tierInfo = drawingTierInfo[_drawingId];
         for (uint256 i = 0; i < TOTAL_TIER_COUNT; i++) {
             // If no winners then no payout
             if (_tierWinners[i] != 0) {
                 // Calculate the payout for each tier from the (remaining prize pool * weight) / total winning tickets
                 //(including LP-owned winning tickets)
-                uint256 premiumTierPayoutAmount = _remainingPrizePool * tierInfo.premiumTierWeights[i] / (PRECISE_UNIT * _tierWinners[i]);
+                uint256 premiumTierPayoutAmount =
+                    _remainingPrizePool * tierInfo.premiumTierWeights[i] / (PRECISE_UNIT * _tierWinners[i]);
                 // Add the premium tier payout to the minimum payout if the tier is eligible for the minimum payout
-                uint256 tierPayout = tierInfo.minPayoutTiers[i] ? _minPayout + premiumTierPayoutAmount : premiumTierPayoutAmount;
+                uint256 tierPayout =
+                    tierInfo.minPayoutTiers[i] ? _minPayout + premiumTierPayoutAmount : premiumTierPayoutAmount;
                 // Store the payout for the tier in the mapping so it can be queried later and add the total tier payout to the total payout
-                tierPayouts[_drawingId][i] = tierPayout;
+                tierPayouts[_drawingId][i] = tierPayout; //@note payout amount per winning ticket for that tier
                 // the total amount of user-owned winning tickets for a given tier is the sum of result and dupResult
                 totalPayout += tierPayout * (_uniqueResult[i] + _dupResult[i]);
             }
         }
     }
 
+    //@note OK
     function _calculateTierTotalWinningCombos(
         uint256 _matches,
-        uint8 _normalMax, 
+        uint8 _normalMax,
         uint8 _bonusballMax,
         bool _bonusballMatch
-    )
-        internal
-        pure
-        returns(uint256)
-    {
+    ) internal pure returns (uint256) {
         if (_bonusballMatch) {
-            return Combinations.choose(NORMAL_BALL_COUNT, _matches) * Combinations.choose(_normalMax - NORMAL_BALL_COUNT, NORMAL_BALL_COUNT - _matches);
+            return Combinations.choose(NORMAL_BALL_COUNT, _matches)
+                * Combinations.choose(_normalMax - NORMAL_BALL_COUNT, NORMAL_BALL_COUNT - _matches);
         } else {
-            return Combinations.choose(NORMAL_BALL_COUNT, _matches) * Combinations.choose(_normalMax - NORMAL_BALL_COUNT, NORMAL_BALL_COUNT - _matches) * (_bonusballMax - 1);
+            return Combinations.choose(NORMAL_BALL_COUNT, _matches)
+                * Combinations.choose(_normalMax - NORMAL_BALL_COUNT, NORMAL_BALL_COUNT - _matches) * (_bonusballMax - 1);
         }
     }
 }

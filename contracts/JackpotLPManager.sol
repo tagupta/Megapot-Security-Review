@@ -12,12 +12,12 @@ For licensing inquiries: legal@coordinationlabs.com
 
 pragma solidity ^0.8.28;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-import { IJackpot } from "./interfaces/IJackpot.sol";
-import { IJackpotLPManager } from "./interfaces/IJackpotLPManager.sol";
-import { JackpotErrors } from "./lib/JackpotErrors.sol";
+import {IJackpot} from "./interfaces/IJackpot.sol";
+import {IJackpotLPManager} from "./interfaces/IJackpotLPManager.sol";
+import {JackpotErrors} from "./lib/JackpotErrors.sol";
 
 /**
  * @title JackpotLPManager
@@ -29,18 +29,17 @@ import { JackpotErrors } from "./lib/JackpotErrors.sol";
  *      - Emergency withdrawal capabilities for system recovery
  */
 contract JackpotLPManager is IJackpotLPManager, Ownable {
-
     // =============================================================
     //                          STRUCTS
     // =============================================================
 
     struct DepositInfo {
-        uint256 amount;
+        uint256 amount; //@note usdc
         uint256 drawingId;
     }
 
     struct WithdrawalInfo {
-        uint256 amountInShares;
+        uint256 amountInShares; //@note shares
         uint256 drawingId;
     }
 
@@ -62,24 +61,14 @@ contract JackpotLPManager is IJackpotLPManager, Ownable {
     //                          EVENTS
     // =============================================================
     event LpDeposited(
-        address indexed lpAddress,
-        uint256 indexed currentDrawingId,
-        uint256 amount,
-        uint256 totalPendingDeposits
+        address indexed lpAddress, uint256 indexed currentDrawingId, uint256 amount, uint256 totalPendingDeposits
     );
 
     event LpWithdrawInitiated(
-        address indexed lpAddress,
-        uint256 indexed currentDrawingId,
-        uint256 amount,
-        uint256 totalPendingWithdrawals
+        address indexed lpAddress, uint256 indexed currentDrawingId, uint256 amount, uint256 totalPendingWithdrawals
     );
 
-    event LpWithdrawFinalized(
-        address indexed lpAddress,
-        uint256 indexed currentDrawingId,
-        uint256 amount
-    );
+    event LpWithdrawFinalized(address indexed lpAddress, uint256 indexed currentDrawingId, uint256 amount);
 
     // =============================================================
     //                          ERRORS
@@ -99,9 +88,9 @@ contract JackpotLPManager is IJackpotLPManager, Ownable {
     //                          STATE VARIABLES
     // =============================================================
 
-    mapping(uint256 => LPDrawingState) internal lpDrawingState;
+    mapping(uint256 => LPDrawingState) internal lpDrawingState; //drawing ID => LPDrawingState
     mapping(address => LP) public lpInfo;
-    mapping(uint256 => uint256) public drawingAccumulator;
+    mapping(uint256 => uint256) public drawingAccumulator; //drawingId => accumulator value
     uint256 public lpPoolCap;
 
     IJackpot public jackpot;
@@ -109,7 +98,7 @@ contract JackpotLPManager is IJackpotLPManager, Ownable {
     // =============================================================
     //                          MODIFIERS
     // =============================================================
-    
+
     modifier onlyJackpot() {
         if (msg.sender != address(jackpot)) revert UnauthorizedCaller();
         _;
@@ -153,7 +142,8 @@ contract JackpotLPManager is IJackpotLPManager, Ownable {
      * - Single initialization enforcement
      * - Access restricted to Jackpot contract
      */
-    function initializeLP() external onlyJackpot() {
+    //@note must ensure that this is called only once
+    function initializeLP() external onlyJackpot {
         drawingAccumulator[0] = PRECISE_UNIT;
     }
 
@@ -177,7 +167,8 @@ contract JackpotLPManager is IJackpotLPManager, Ownable {
      * - Access restricted to Jackpot contract
      * - Pool cap validation prevents over-deposits
      */
-    function processDeposit(uint256 _drawingId, address _lpAddress, uint256 _amount) external onlyJackpot() {
+    //@note OK
+    function processDeposit(uint256 _drawingId, address _lpAddress, uint256 _amount) external onlyJackpot {
         // Note: this check also prevents users from depositing before initializeLPDeposits() is called since the pool cap will be 0
         // We will exclude pending withdrawals since the amount withdrawn is dependent on the post-drawing LP value. This makes this
         // check more conservative.
@@ -216,7 +207,11 @@ contract JackpotLPManager is IJackpotLPManager, Ownable {
      * - Access restricted to Jackpot contract
      * - Share balance validation
      */
-    function processInitiateWithdraw(uint256 _drawingId, address _lpAddress, uint256 _amountToWithdrawInShares) external onlyJackpot() {
+    //@note OK
+    function processInitiateWithdraw(uint256 _drawingId, address _lpAddress, uint256 _amountToWithdrawInShares)
+        external
+        onlyJackpot
+    {
         LP storage lp = lpInfo[_lpAddress];
 
         _consolidateDeposits(lp, _drawingId);
@@ -231,7 +226,9 @@ contract JackpotLPManager is IJackpotLPManager, Ownable {
         lp.consolidatedShares -= _amountToWithdrawInShares;
         lpDrawingState[_drawingId].pendingWithdrawals += _amountToWithdrawInShares;
 
-        emit LpWithdrawInitiated(_lpAddress, _drawingId, _amountToWithdrawInShares, lpDrawingState[_drawingId].pendingWithdrawals);
+        emit LpWithdrawInitiated(
+            _lpAddress, _drawingId, _amountToWithdrawInShares, lpDrawingState[_drawingId].pendingWithdrawals
+        );
     }
 
     /**
@@ -253,7 +250,14 @@ contract JackpotLPManager is IJackpotLPManager, Ownable {
      * - Access restricted to Jackpot contract
      * - Accurate share-to-USDC conversion using verified accumulator values
      */
-    function processFinalizeWithdraw(uint256 _drawingId, address _lpAddress) external onlyJackpot() returns (uint256 withdrawableAmount) {
+    //@audit-q check if this can be exploited
+    //@note If your system allows canceling pending deposits before consolidation (not shown here), they could wait for the outcome and cancel when accumulator ↑ but keep when accumulator ↓ → a free option
+    //@note OK
+    function processFinalizeWithdraw(uint256 _drawingId, address _lpAddress)
+        external
+        onlyJackpot
+        returns (uint256 withdrawableAmount)
+    {
         LP storage lp = lpInfo[_lpAddress];
 
         // Accrue pending withdrawals to claimable withdrawals
@@ -288,7 +292,12 @@ contract JackpotLPManager is IJackpotLPManager, Ownable {
      * - Complete position removal prevents partial recovery
      * - Maintains global state consistency
      */
-    function emergencyWithdrawLP(uint256 _drawingId, address _user) external onlyJackpot() returns (uint256 withdrawableAmount) {
+    //@note OK
+    function emergencyWithdrawLP(uint256 _drawingId, address _user)
+        external
+        onlyJackpot
+        returns (uint256 withdrawableAmount)
+    {
         LP storage lp = lpInfo[_user];
 
         if (_drawingId == 0) {
@@ -311,6 +320,7 @@ contract JackpotLPManager is IJackpotLPManager, Ownable {
         }
 
         // consolidated shares to usdc
+        //@note _drawingId => current drawing id
         uint256 sharesToUsdc = lp.consolidatedShares * drawingAccumulator[_drawingId - 1] / PRECISE_UNIT;
         withdrawableAmount += sharesToUsdc;
         // Keep global state consistent
@@ -321,14 +331,17 @@ contract JackpotLPManager is IJackpotLPManager, Ownable {
         _consolidateWithdrawals(lp, _drawingId);
         // Add convert pending withdrawals from this round to usdc
         if (lp.pendingWithdrawal.amountInShares > 0) {
-            uint256 withdrawalToUsdc = lp.pendingWithdrawal.amountInShares * drawingAccumulator[lp.pendingWithdrawal.drawingId - 1] / PRECISE_UNIT;
+            //@note current drawing
+            //@note _drawingId - 1 => for consistency => @audit-low
+            uint256 withdrawalToUsdc = lp.pendingWithdrawal.amountInShares
+                * drawingAccumulator[lp.pendingWithdrawal.drawingId - 1] / PRECISE_UNIT;
             withdrawableAmount += withdrawalToUsdc;
             // Keep global state consistent
             lpDrawingState[_drawingId].pendingWithdrawals -= lp.pendingWithdrawal.amountInShares;
             lpDrawingState[_drawingId].lpPoolTotal -= withdrawalToUsdc;
             delete lp.pendingWithdrawal;
         }
-        
+
         // Do not need to update any global state since claimableWithdrawals have already been counted as out of the lpPool
         withdrawableAmount += lp.claimableWithdrawals;
         lp.claimableWithdrawals = 0;
@@ -368,26 +381,32 @@ contract JackpotLPManager is IJackpotLPManager, Ownable {
      * - Division-by-zero avoided by `PRECISE_UNIT` fallback when `lpPoolTotal == 0`
      * - Integer division truncation is conservative in favor of LP solvency
      */
+    //@note OK
     function processDrawingSettlement(
         uint256 _drawingId,
         uint256 _lpEarnings,
         uint256 _userWinnings,
         uint256 _protocolFeeAmount
-    ) external onlyJackpot() returns (uint256 newLPValue, uint256 newAccumulator) {
+    ) external onlyJackpot returns (uint256 newLPValue, uint256 newAccumulator) {
         LPDrawingState storage currentLP = lpDrawingState[_drawingId];
+        //@note right now the function relies on caller to ensure this
         uint256 postDrawLpValue = currentLP.lpPoolTotal + _lpEarnings - _userWinnings - _protocolFeeAmount;
 
         // Note: we don't need to update the accumulator for the first drawing (0) since it's already set to PRECISE_UNIT
         if (_drawingId > 0) {
             // When setting for drawingId we need to use the accumulator from the previous drawing. If LP was 0 in previous
             // drawing then we need to set the accumulator to PRECISE_UNIT to avoid division by zero.
-            newAccumulator = currentLP.lpPoolTotal == 0 ? PRECISE_UNIT :
-                (drawingAccumulator[_drawingId - 1] * postDrawLpValue) / currentLP.lpPoolTotal;
+            newAccumulator = currentLP.lpPoolTotal == 0
+                ? PRECISE_UNIT
+                : (drawingAccumulator[_drawingId - 1] * postDrawLpValue) / currentLP.lpPoolTotal;
             drawingAccumulator[_drawingId] = newAccumulator;
         }
-        
+
         // Convert pending withdrawals to usdc to calculate the new lp value
+        //@report-written for drawingID == 0, it is not using the set value of drawingAccumulator[0], rather this value is used as 0, overstating the newLPValue
+        //@note currentLP.pendingWithdrawals => shares
         uint256 withdrawalsInUSDC = currentLP.pendingWithdrawals * newAccumulator / PRECISE_UNIT;
+        //@note currentLP.pendingDeposits => USDC
         newLPValue = postDrawLpValue + currentLP.pendingDeposits - withdrawalsInUSDC;
     }
 
@@ -405,12 +424,10 @@ contract JackpotLPManager is IJackpotLPManager, Ownable {
      * @custom:security
      * - Access restricted to Jackpot contract
      */
-    function initializeDrawingLP(uint256 _drawingId, uint256 _initialLPValue) external onlyJackpot() {
-        lpDrawingState[_drawingId] = LPDrawingState({
-            lpPoolTotal: _initialLPValue,
-            pendingDeposits: 0,
-            pendingWithdrawals: 0
-        });
+    //@note OK
+    function initializeDrawingLP(uint256 _drawingId, uint256 _initialLPValue) external onlyJackpot {
+        lpDrawingState[_drawingId] =
+            LPDrawingState({lpPoolTotal: _initialLPValue, pendingDeposits: 0, pendingWithdrawals: 0});
     }
 
     /**
@@ -428,7 +445,8 @@ contract JackpotLPManager is IJackpotLPManager, Ownable {
      * - Access restricted to Jackpot contract
      * - Validates cap against current pool size to prevent system inconsistency
      */
-    function setLPPoolCap(uint256 _drawingId, uint256 _lpPoolCap) external onlyJackpot() {
+    //@note OK
+    function setLPPoolCap(uint256 _drawingId, uint256 _lpPoolCap) external onlyJackpot {
         LPDrawingState storage currentLP = lpDrawingState[_drawingId];
         if (_lpPoolCap < currentLP.lpPoolTotal + currentLP.pendingDeposits) revert InvalidLPPoolCap();
         lpPoolCap = _lpPoolCap;
@@ -483,24 +501,32 @@ contract JackpotLPManager is IJackpotLPManager, Ownable {
      * @custom:security
      * - Valuations reference historical accumulators; pending withdrawals are estimates and may differ from final settled amounts.
      */
+    //@note OK
     function getLPValueBreakdown(address _lpAddress) external view returns (LPValueBreakdown memory breakdown) {
         LP storage lp = lpInfo[_lpAddress];
         uint256 currentDrawingId = jackpot.currentDrawingId();
         uint256 consolidatedShares = lp.consolidatedShares;
         if (lp.lastDeposit.drawingId < currentDrawingId && lp.lastDeposit.amount > 0) {
+            //@note lastDeposit => usdc
+            //@note consolidatedShares => shares
             consolidatedShares += (lp.lastDeposit.amount * PRECISE_UNIT) / drawingAccumulator[lp.lastDeposit.drawingId];
         }
 
         uint256 claimableWithdrawals = lp.claimableWithdrawals;
         if (lp.pendingWithdrawal.drawingId < currentDrawingId && lp.pendingWithdrawal.amountInShares > 0) {
-            claimableWithdrawals += (lp.pendingWithdrawal.amountInShares * drawingAccumulator[lp.pendingWithdrawal.drawingId]) / PRECISE_UNIT;
+            //@note pendingWithdrawal => shares
+            //@note claimableWithdrawals => usdc
+            claimableWithdrawals += (
+                lp.pendingWithdrawal.amountInShares * drawingAccumulator[lp.pendingWithdrawal.drawingId]
+            ) / PRECISE_UNIT;
         }
 
         return LPValueBreakdown({
             activeDeposits: consolidatedShares * drawingAccumulator[currentDrawingId - 1] / PRECISE_UNIT,
             pendingDeposits: lp.lastDeposit.drawingId == currentDrawingId ? lp.lastDeposit.amount : 0,
-            pendingWithdrawals: lp.pendingWithdrawal.drawingId == currentDrawingId ? 
-                lp.pendingWithdrawal.amountInShares * drawingAccumulator[currentDrawingId - 1] / PRECISE_UNIT : 0,
+            pendingWithdrawals: lp.pendingWithdrawal.drawingId == currentDrawingId
+                ? lp.pendingWithdrawal.amountInShares * drawingAccumulator[currentDrawingId - 1] / PRECISE_UNIT
+                : 0,
             claimableWithdrawals: claimableWithdrawals
         });
     }
@@ -518,21 +544,26 @@ contract JackpotLPManager is IJackpotLPManager, Ownable {
     // =============================================================
     //                          INTERNAL FUNCTIONS
     // =============================================================
-
+    //@note OK
     function _consolidateDeposits(LP storage _lp, uint256 _drawingId) internal {
         if (_lp.lastDeposit.amount > 0 && _lp.lastDeposit.drawingId < _drawingId) {
             // Accumulators can never be zero after first initialization because even if entire prizePool is won the LP
             // will still receive ticket revenue
-            _lp.consolidatedShares += (_lp.lastDeposit.amount * PRECISE_UNIT) / drawingAccumulator[_lp.lastDeposit.drawingId];
+            //@audit-q let's see if LP can find a way to earn more shares without doing a certain something?
+            _lp.consolidatedShares +=
+                (_lp.lastDeposit.amount * PRECISE_UNIT) / drawingAccumulator[_lp.lastDeposit.drawingId];
             delete _lp.lastDeposit;
         }
     }
 
+    //@note OK
     function _consolidateWithdrawals(LP storage _lp, uint256 _drawingId) internal {
         if (_lp.pendingWithdrawal.amountInShares > 0 && _lp.pendingWithdrawal.drawingId < _drawingId) {
             // Accumulators can never be zero after first initialization because even if entire prizePool is won the LP
             // will still receive ticket revenue
-            _lp.claimableWithdrawals += (_lp.pendingWithdrawal.amountInShares * drawingAccumulator[_lp.pendingWithdrawal.drawingId]) / PRECISE_UNIT;
+            _lp.claimableWithdrawals += (
+                _lp.pendingWithdrawal.amountInShares * drawingAccumulator[_lp.pendingWithdrawal.drawingId]
+            ) / PRECISE_UNIT;
             delete _lp.pendingWithdrawal;
         }
     }

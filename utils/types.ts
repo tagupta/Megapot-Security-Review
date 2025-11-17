@@ -12,91 +12,91 @@ export type DrawingState = {
   drawingTime: bigint;
   winningTicket: bigint;
   jackpotLock: boolean;
-}
+};
 
 export type LPDrawingState = {
   lpPoolTotal: bigint;
   pendingDeposits: bigint;
   pendingWithdrawals: bigint;
-}
+};
 
 export type LPValueBreakdown = {
   activeDeposits: bigint;
   pendingDeposits: bigint;
   pendingWithdrawals: bigint;
   claimableWithdrawals: bigint;
-}
+};
 
 export type DepositInfo = {
   amount: bigint;
   drawingId: bigint;
-}
+};
 
 export type WithdrawalInfo = {
   amountInShares: bigint;
   drawingId: bigint;
-}
+};
 
 export type LP = {
   consolidatedShares: bigint;
   lastDeposit: DepositInfo;
   pendingWithdrawal: WithdrawalInfo;
   claimableWithdrawals: bigint;
-}
+};
 
 export type Ticket = {
   normals: bigint[];
   bonusball: bigint;
-}
+};
 
 export type ReferralScheme = {
   referrers: Address[];
   referralSplit: bigint[];
-}
+};
 
 export type TrackedTicket = {
   drawingId: bigint;
   packedTicket: bigint;
   referralScheme: string;
-}
+};
 
 export type ExtendedTrackedTicket = {
   ticketId: bigint;
   ticket: TrackedTicket;
   normals: bigint[];
   bonusball: bigint;
-}
+};
 
 export type TierInfo = {
   expectedWinners: bigint;
   tierPayout: bigint;
   tierAllocation: bigint;
-}
+};
 
 export type SetRequest = {
   samples: bigint;
   minRange: bigint;
   maxRange: bigint;
   withReplacement: boolean;
-}
+};
 
 export type RelayTxData = {
   approveTo: Address;
   to: Address;
   data: string;
-}
+};
 
 export type DrawingTierInfo = {
   minPayout: bigint;
   premiumTierMinAllocation: bigint;
   minPayoutTiers: boolean[];
   premiumTierWeights: bigint[];
-}
+};
 
 export type ComboCount = {
   count: bigint;
   dupCount: bigint;
-}
+};
 
 export type JackpotSystemFixture = {
   // Accounts
@@ -134,8 +134,11 @@ export type JackpotSystemFixture = {
     minimumPayout: bigint;
     premiumTierWeights: bigint[];
     minPayoutTiers: boolean[];
+    //@note added new value
+    entropyBaseGasLimit: bigint;
+    entropyVariableGasLimit: bigint;
   };
 
   // Helper functions
   deployer: any;
-}
+};

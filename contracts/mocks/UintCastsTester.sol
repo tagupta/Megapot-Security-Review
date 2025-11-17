@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.28;
 
-import { UintCasts } from "../lib/UintCasts.sol";
+import {UintCasts} from "../lib/UintCasts.sol";
 
 contract UintCastsTester {
     using UintCasts for uint256;
@@ -15,4 +15,3 @@ contract UintCastsTester {
         return UintCasts.toUint8Array(values);
     }
 }
-

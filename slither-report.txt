@@ -1,0 +1,1119 @@
+'npx hardhat clean' running (wd: /Users/tanugupta/Learning/Solidity-Security/2025-11-megapot)
+'npx hardhat clean --global' running (wd: /Users/tanugupta/Learning/Solidity-Security/2025-11-megapot)
+'npx hardhat compile --force' running (wd: /Users/tanugupta/Learning/Solidity-Security/2025-11-megapot)
+ERROR:ContractSolcParsing:Impossible to generate IR for JackpotBridgeManager.constructor (node_modules/@openzeppelin/contracts/utils/cryptography/EIP712.sol#68-77):
+ 'NoneType' object has no attribute 'parameters'
+ERROR:ContractSolcParsing:Impossible to generate IR for JackpotBridgeManager._EIP712Name (node_modules/@openzeppelin/contracts/utils/cryptography/EIP712.sol#146-148):
+ 'NoneType' object has no attribute 'parameters'
+ERROR:ContractSolcParsing:Impossible to generate IR for JackpotBridgeManager._EIP712Version (node_modules/@openzeppelin/contracts/utils/cryptography/EIP712.sol#157-159):
+ 'NoneType' object has no attribute 'parameters'
+INFO:Detectors:
+MockDepository.depositErc20(address,address,uint256,bytes32) (contracts/mocks/MockDepository.sol#23-25) uses arbitrary from in transferFrom: usdc.transferFrom(depositor,address(this),amount) (contracts/mocks/MockDepository.sol#24)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#arbitrary-from-in-transferfrom
+
+//@audit-q
+INFO:Detectors:
+Jackpot.runJackpot() (contracts/Jackpot.sol#646-691) sends eth to arbitrary user
+	Dangerous calls:
+	- entropy.requestAndCallbackScaledRandomness{value: fee}(entropyGasLimit,setRequests,this.scaledEntropyCallback.selector,bytes()) (contracts/Jackpot.sol#683-688)
+ETHRejectingContract.callRunJackpot(address,uint256) (contracts/mocks/ETHRejectingContract.sol#59-73) sends eth to arbitrary user
+	Dangerous calls:
+	- (success,returnData) = _jackpot.call{value: _value}(abi.encodeWithSignature(runJackpot())) (contracts/mocks/ETHRejectingContract.sol#63-65)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#functions-that-send-ether-to-arbitrary-destinations
+
+INFO:Detectors:
+Math.mulDiv(uint256,uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#204-275) has bitwise-xor operator ^ instead of the exponentiation operator **: 
+	 - inverse = (3 * denominator) ^ 2 (node_modules/@openzeppelin/contracts/utils/math/Math.sol#257)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#incorrect-exponentiation
+
+INFO:Detectors:
+LibBit.fls(uint256) (node_modules/solady/src/utils/LibBit.sol#16-28) contains an incorrect shift operation: r = r | byte(uint256,uint256)(0x1f & 0x8421084210842108cc6318c6db6d54be >> x >> r,0x0706060506020504060203020504030106050205030304010505030400000000) (node_modules/solady/src/utils/LibBit.sol#25-26)
+LibBit.clz(uint256) (node_modules/solady/src/utils/LibBit.sol#33-45) contains an incorrect shift operation: r = r ^ byte(uint256,uint256)(0x1f & 0x8421084210842108cc6318c6db6d54be >> x >> r,0xf8f9f9faf9fdfafbf9fdfcfdfafbfcfef9fafdfafcfcfbfefafafcfbffffffff) + ! x (node_modules/solady/src/utils/LibBit.sol#42-43)
+LibBit.ffs(uint256) (node_modules/solady/src/utils/LibBit.sol#53-69) contains an incorrect shift operation: r = 0x8040405543005266443200005020610674053026020000107506200176117077 << x * 0xb6db6db6ddddddddd34d34d349249249210842108c6318c639ce739cffffffff >> 250 << 2 >> 252 << 5 (node_modules/solady/src/utils/LibBit.sol#61-63)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#incorrect-shift-in-assembly
+
+INFO:Detectors:
+MockDepository.depositErc20(address,address,uint256,bytes32) (contracts/mocks/MockDepository.sol#23-25) ignores return value by usdc.transferFrom(depositor,address(this),amount) (contracts/mocks/MockDepository.sol#24)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#unchecked-transfer
+
+INFO:Detectors:
+JackpotBridgeManager.userTickets (contracts/JackpotBridgeManager.sol#94) is never initialized. It is used in:
+	- JackpotBridgeManager.buyTickets(IJackpot.Ticket[],address,address[],uint256[],bytes32) (contracts/JackpotBridgeManager.sol#166-198)
+	- JackpotBridgeManager.getUserTickets(address,uint256) (contracts/JackpotBridgeManager.sol#322-332)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#uninitialized-state-variables
+
+INFO:Detectors:
+Math.mulDiv(uint256,uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#204-275) performs a multiplication on the result of a division:
+	- denominator = denominator / twos (node_modules/@openzeppelin/contracts/utils/math/Math.sol#242)
+	- inverse = (3 * denominator) ^ 2 (node_modules/@openzeppelin/contracts/utils/math/Math.sol#257)
+Math.mulDiv(uint256,uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#204-275) performs a multiplication on the result of a division:
+	- denominator = denominator / twos (node_modules/@openzeppelin/contracts/utils/math/Math.sol#242)
+	- inverse *= 2 - denominator * inverse (node_modules/@openzeppelin/contracts/utils/math/Math.sol#261)
+Math.mulDiv(uint256,uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#204-275) performs a multiplication on the result of a division:
+	- denominator = denominator / twos (node_modules/@openzeppelin/contracts/utils/math/Math.sol#242)
+	- inverse *= 2 - denominator * inverse (node_modules/@openzeppelin/contracts/utils/math/Math.sol#262)
+Math.mulDiv(uint256,uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#204-275) performs a multiplication on the result of a division:
+	- denominator = denominator / twos (node_modules/@openzeppelin/contracts/utils/math/Math.sol#242)
+	- inverse *= 2 - denominator * inverse (node_modules/@openzeppelin/contracts/utils/math/Math.sol#263)
+Math.mulDiv(uint256,uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#204-275) performs a multiplication on the result of a division:
+	- denominator = denominator / twos (node_modules/@openzeppelin/contracts/utils/math/Math.sol#242)
+	- inverse *= 2 - denominator * inverse (node_modules/@openzeppelin/contracts/utils/math/Math.sol#264)
+Math.mulDiv(uint256,uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#204-275) performs a multiplication on the result of a division:
+	- denominator = denominator / twos (node_modules/@openzeppelin/contracts/utils/math/Math.sol#242)
+	- inverse *= 2 - denominator * inverse (node_modules/@openzeppelin/contracts/utils/math/Math.sol#265)
+Math.mulDiv(uint256,uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#204-275) performs a multiplication on the result of a division:
+	- denominator = denominator / twos (node_modules/@openzeppelin/contracts/utils/math/Math.sol#242)
+	- inverse *= 2 - denominator * inverse (node_modules/@openzeppelin/contracts/utils/math/Math.sol#266)
+Math.mulDiv(uint256,uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#204-275) performs a multiplication on the result of a division:
+	- low = low / twos (node_modules/@openzeppelin/contracts/utils/math/Math.sol#245)
+	- result = low * inverse (node_modules/@openzeppelin/contracts/utils/math/Math.sol#272)
+Math.invMod(uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#315-361) performs a multiplication on the result of a division:
+	- quotient = gcd / remainder (node_modules/@openzeppelin/contracts/utils/math/Math.sol#337)
+	- (gcd,remainder) = (remainder,gcd - remainder * quotient) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#339-346)
+GuaranteedMinimumPayoutCalculator._calculateAndStoreTierPayouts(uint256,uint256,uint256,uint256[12],uint256[],uint256[]) (contracts/GuaranteedMinimumPayoutCalculator.sol#412-438) performs a multiplication on the result of a division:
+	- premiumTierPayoutAmount = _remainingPrizePool * tierInfo.premiumTierWeights[i] / (PRECISE_UNIT * _tierWinners[i]) (contracts/GuaranteedMinimumPayoutCalculator.sol#429)
+	- totalPayout += tierPayout * (_uniqueResult[i] + _dupResult[i]) (contracts/GuaranteedMinimumPayoutCalculator.sol#435)
+	- tierPayout = premiumTierPayoutAmount (contracts/GuaranteedMinimumPayoutCalculator.sol#431)
+Jackpot._calculateLpPoolCap(uint256) (contracts/Jackpot.sol#1469-1476) performs a multiplication on the result of a division:
+	- maxPrizePool = maxAllowableTickets * ticketPrice * (PRECISE_UNIT - lpEdgeTarget) / PRECISE_UNIT (contracts/Jackpot.sol#1472)
+	- Math.min(maxPrizePool * PRECISE_UNIT / (PRECISE_UNIT - reserveRatio),governancePoolCap) (contracts/Jackpot.sol#1475)
+Jackpot._setNewDrawingState(uint256,uint256) (contracts/Jackpot.sol#1478-1517) performs a multiplication on the result of a division:
+	- newPrizePool = _newLpValue * (PRECISE_UNIT - reserveRatio) / PRECISE_UNIT (contracts/Jackpot.sol#1484)
+	- minNumberTickets = newPrizePool * PRECISE_UNIT / ((PRECISE_UNIT - lpEdgeTarget) * ticketPrice) (contracts/Jackpot.sol#1495)
+Jackpot._validateAndTrackReferrals(address[],uint256[],uint256) (contracts/Jackpot.sol#1534-1569) performs a multiplication on the result of a division:
+	- referralFeeTotal = _ticketsValue * referralFee / PRECISE_UNIT (contracts/Jackpot.sol#1544)
+	- referrerFee = referralFeeTotal * _referralSplit[i] / PRECISE_UNIT (contracts/Jackpot.sol#1553)
+Jackpot._payReferrersWinnings(bytes32,uint256,uint256) (contracts/Jackpot.sol#1671-1698) performs a multiplication on the result of a division:
+	- referrerShare = _winningAmount * _referralWinShare / PRECISE_UNIT (contracts/Jackpot.sol#1679)
+	- referrerFee = referrerShare * referralScheme.referralSplit[i] / PRECISE_UNIT (contracts/Jackpot.sol#1693)
+ScaledEntropyProvider._drawWithReplacement(uint256,uint256,uint8,uint256) (contracts/ScaledEntropyProvider.sol#314-340) performs a multiplication on the result of a division:
+	- limit = (type()(uint256).max / range) * range (contracts/ScaledEntropyProvider.sol#328)
+FisherYatesRejection.draw(uint256,uint256,uint256,uint256) (contracts/lib/FisherYatesWithRejection.sol#47-88) performs a multiplication on the result of a division:
+	- limit = (MAX_UINT / (i_scope_0 + 1)) * (i_scope_0 + 1) (contracts/lib/FisherYatesWithRejection.sol#69)
+LibBit.popCount(uint256) (node_modules/solady/src/utils/LibBit.sol#72-82) performs a multiplication on the result of a division:
+	- c = isMax_popCount_asm_0 << 8 | x * max_popCount_asm_0 / 255 >> 248 (node_modules/solady/src/utils/LibBit.sol#80)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#divide-before-multiply
+
+//@audit-q
+INFO:Detectors:
+Contract locking ether found:
+	Contract JackpotTicketNFT (contracts/JackpotTicketNFT.sol#31-208) has payable functions:
+	 - ERC721.approve(address,uint256) (node_modules/solady/src/tokens/ERC721.sol#202-204)
+	 - ERC721.transferFrom(address,address,uint256) (node_modules/solady/src/tokens/ERC721.sol#252-310)
+	 - ERC721.safeTransferFrom(address,address,uint256) (node_modules/solady/src/tokens/ERC721.sol#313-316)
+	 - ERC721.safeTransferFrom(address,address,uint256,bytes) (node_modules/solady/src/tokens/ERC721.sol#330-337)
+	But does not have a function to withdraw the ether
+Contract locking ether found:
+	Contract EntropyMock (contracts/mocks/EntropyMock.sol#5-107) has payable functions:
+	 - EntropyMock.requestV2(address,uint32) (contracts/mocks/EntropyMock.sol#21-36)
+	 - EntropyMock.requestV2(address,bytes32,uint32) (contracts/mocks/EntropyMock.sol#38-54)
+	But does not have a function to withdraw the ether
+Contract locking ether found:
+	Contract ReentrantUSDCMock (contracts/mocks/ReentrantUSDCMock.sol#10-154) has payable functions:
+	 - ReentrantUSDCMock.receive() (contracts/mocks/ReentrantUSDCMock.sol#153)
+	But does not have a function to withdraw the ether
+Contract locking ether found:
+	Contract ScaledEntropyProviderMock (contracts/mocks/ScaledEntropyProviderMock.sol#7-78) has payable functions:
+	 - IScaledEntropyProvider.requestAndCallbackScaledRandomness(uint32,IScaledEntropyProvider.SetRequest[],bytes4,bytes) (contracts/interfaces/IScaledEntropyProvider.sol#12-20)
+	 - ScaledEntropyProviderMock.requestAndCallbackScaledRandomness(uint32,IScaledEntropyProvider.SetRequest[],bytes4,bytes) (contracts/mocks/ScaledEntropyProviderMock.sol#31-52)
+	But does not have a function to withdraw the ether
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#contracts-that-lock-ether
+
+//@audit-q 
+INFO:Detectors:
+Reentrancy in JackpotBridgeManager._updateTicketOwnership(uint256[],address) (contracts/JackpotBridgeManager.sol#364-370):
+	External calls:
+	- IERC721(address(jackpotTicketNFT)).safeTransferFrom(address(this),_recipient,ticketId) (contracts/JackpotBridgeManager.sol#368)
+	State variables written after the call(s):
+	- delete ticketOwner[ticketId] (contracts/JackpotBridgeManager.sol#367)
+	JackpotBridgeManager.ticketOwner (contracts/JackpotBridgeManager.sol#95) can be used in cross function reentrancies:
+	- JackpotBridgeManager._updateTicketOwnership(uint256[],address) (contracts/JackpotBridgeManager.sol#364-370)
+	- JackpotBridgeManager._validateTicketOwnership(uint256[],address) (contracts/JackpotBridgeManager.sol#338-343)
+	- JackpotBridgeManager.getUserTickets(address,uint256) (contracts/JackpotBridgeManager.sol#322-332)
+	- JackpotBridgeManager.ticketOwner (contracts/JackpotBridgeManager.sol#95)
+Reentrancy in Jackpot._validateAndStoreTickets(Jackpot.DrawingState,IJackpot.Ticket[],address,bytes32,bytes32) (contracts/Jackpot.sol#1571-1612):
+	External calls:
+	- jackpotNFT.mintTicket(_recipient,ticketId,currentDrawingId,packedTicket,_referralSchemeId) (contracts/Jackpot.sol#1594)
+	State variables written after the call(s):
+	- _currentDrawingState.prizePool += _currentDrawingState.ticketPrice - _currentDrawingState.edgePerTicket (contracts/Jackpot.sol#1599)
+	Jackpot.drawingState (contracts/Jackpot.sol#202) can be used in cross function reentrancies:
+	- Jackpot._lockJackpot() (contracts/Jackpot.sol#1719-1722)
+	- Jackpot._setNewDrawingState(uint256,uint256) (contracts/Jackpot.sol#1478-1517)
+	- Jackpot._unlockJackpot() (contracts/Jackpot.sol#1724-1727)
+	- Jackpot.getDrawingState(uint256) (contracts/Jackpot.sol#1362-1364)
+	- Jackpot.getEntropyCallbackFee() (contracts/Jackpot.sol#1461-1464)
+	- Jackpot.getSubsetCount(uint256,uint8[],uint8) (contracts/Jackpot.sol#1401-1404)
+	- Jackpot.getTicketTierIds(uint256[]) (contracts/Jackpot.sol#1438-1446)
+	- Jackpot.getUnpackedTicket(uint256,uint256) (contracts/Jackpot.sol#1422-1424)
+	- Jackpot.initiateWithdraw(uint256) (contracts/Jackpot.sol#506-511)
+	- Jackpot.lockJackpot() (contracts/Jackpot.sol#1289-1292)
+	- Jackpot.unlockJackpot() (contracts/Jackpot.sol#1307-1310)
+Reentrancy in Jackpot.buyTickets(IJackpot.Ticket[],address,address[],uint256[],bytes32) (contracts/Jackpot.sol#365-393):
+	External calls:
+	- ticketIds = _validateAndStoreTickets(currentDrawingState,_tickets,_recipient,referralSchemeId,_source) (contracts/Jackpot.sol#387)
+		- jackpotNFT.mintTicket(_recipient,ticketId,currentDrawingId,packedTicket,_referralSchemeId) (contracts/Jackpot.sol#1594)
+	State variables written after the call(s):
+	- currentDrawingState.lpEarnings += ticketsValue - referralFeeTotal (contracts/Jackpot.sol#389)
+	Jackpot.drawingState (contracts/Jackpot.sol#202) can be used in cross function reentrancies:
+	- Jackpot._lockJackpot() (contracts/Jackpot.sol#1719-1722)
+	- Jackpot._setNewDrawingState(uint256,uint256) (contracts/Jackpot.sol#1478-1517)
+	- Jackpot._unlockJackpot() (contracts/Jackpot.sol#1724-1727)
+	- Jackpot.getDrawingState(uint256) (contracts/Jackpot.sol#1362-1364)
+	- Jackpot.getEntropyCallbackFee() (contracts/Jackpot.sol#1461-1464)
+	- Jackpot.getSubsetCount(uint256,uint8[],uint8) (contracts/Jackpot.sol#1401-1404)
+	- Jackpot.getTicketTierIds(uint256[]) (contracts/Jackpot.sol#1438-1446)
+	- Jackpot.getUnpackedTicket(uint256,uint256) (contracts/Jackpot.sol#1422-1424)
+	- Jackpot.initiateWithdraw(uint256) (contracts/Jackpot.sol#506-511)
+	- Jackpot.lockJackpot() (contracts/Jackpot.sol#1289-1292)
+	- Jackpot.unlockJackpot() (contracts/Jackpot.sol#1307-1310)
+	- currentDrawingState.globalTicketsBought += numTicketsBought (contracts/Jackpot.sol#390)
+	Jackpot.drawingState (contracts/Jackpot.sol#202) can be used in cross function reentrancies:
+	- Jackpot._lockJackpot() (contracts/Jackpot.sol#1719-1722)
+	- Jackpot._setNewDrawingState(uint256,uint256) (contracts/Jackpot.sol#1478-1517)
+	- Jackpot._unlockJackpot() (contracts/Jackpot.sol#1724-1727)
+	- Jackpot.getDrawingState(uint256) (contracts/Jackpot.sol#1362-1364)
+	- Jackpot.getEntropyCallbackFee() (contracts/Jackpot.sol#1461-1464)
+	- Jackpot.getSubsetCount(uint256,uint8[],uint8) (contracts/Jackpot.sol#1401-1404)
+	- Jackpot.getTicketTierIds(uint256[]) (contracts/Jackpot.sol#1438-1446)
+	- Jackpot.getUnpackedTicket(uint256,uint256) (contracts/Jackpot.sol#1422-1424)
+	- Jackpot.initiateWithdraw(uint256) (contracts/Jackpot.sol#506-511)
+	- Jackpot.lockJackpot() (contracts/Jackpot.sol#1289-1292)
+	- Jackpot.unlockJackpot() (contracts/Jackpot.sol#1307-1310)
+Reentrancy in Jackpot.claimWinnings(uint256[]) (contracts/Jackpot.sol#418-452):
+	External calls:
+	- jackpotNFT.burnTicket(ticketId) (contracts/Jackpot.sol#431)
+	State variables written after the call(s):
+	- referrerShare = _payReferrersWinnings(ticketInfo.referralScheme,winningAmount,winningDrawingState.referralWinShare) (contracts/Jackpot.sol#434-438)
+		- drawingState[currentDrawingId].lpEarnings += referrerShare (contracts/Jackpot.sol#1683)
+	Jackpot.drawingState (contracts/Jackpot.sol#202) can be used in cross function reentrancies:
+	- Jackpot._lockJackpot() (contracts/Jackpot.sol#1719-1722)
+	- Jackpot._setNewDrawingState(uint256,uint256) (contracts/Jackpot.sol#1478-1517)
+	- Jackpot._unlockJackpot() (contracts/Jackpot.sol#1724-1727)
+	- Jackpot.getDrawingState(uint256) (contracts/Jackpot.sol#1362-1364)
+	- Jackpot.getEntropyCallbackFee() (contracts/Jackpot.sol#1461-1464)
+	- Jackpot.getSubsetCount(uint256,uint8[],uint8) (contracts/Jackpot.sol#1401-1404)
+	- Jackpot.getTicketTierIds(uint256[]) (contracts/Jackpot.sol#1438-1446)
+	- Jackpot.getUnpackedTicket(uint256,uint256) (contracts/Jackpot.sol#1422-1424)
+	- Jackpot.initiateWithdraw(uint256) (contracts/Jackpot.sol#506-511)
+	- Jackpot.lockJackpot() (contracts/Jackpot.sol#1289-1292)
+	- Jackpot.unlockJackpot() (contracts/Jackpot.sol#1307-1310)
+	- referrerShare = _payReferrersWinnings(ticketInfo.referralScheme,winningAmount,winningDrawingState.referralWinShare) (contracts/Jackpot.sol#434-438)
+		- referralFees[referrer] += referrerFee (contracts/Jackpot.sol#1694)
+	Jackpot.referralFees (contracts/Jackpot.sol#205) can be used in cross function reentrancies:
+	- Jackpot.referralFees (contracts/Jackpot.sol#205)
+Reentrancy in Jackpot.initializeJackpot(uint256) (contracts/Jackpot.sol#852-862):
+	External calls:
+	- (newLpValue,None) = jackpotLPManager.processDrawingSettlement(0,0,0,0) (contracts/Jackpot.sol#858-860)
+	- _setNewDrawingState(newLpValue,_initialDrawingTime) (contracts/Jackpot.sol#861)
+		- jackpotLPManager.initializeDrawingLP(currentDrawingId,_newLpValue) (contracts/Jackpot.sol#1481)
+		- payoutCalculator.setDrawingTierInfo(currentDrawingId) (contracts/Jackpot.sol#1505)
+	State variables written after the call(s):
+	- _setNewDrawingState(newLpValue,_initialDrawingTime) (contracts/Jackpot.sol#861)
+		- currentDrawingId ++ (contracts/Jackpot.sol#1479)
+	Jackpot.currentDrawingId (contracts/Jackpot.sol#211) can be used in cross function reentrancies:
+	- Jackpot._lockJackpot() (contracts/Jackpot.sol#1719-1722)
+	- Jackpot._setNewDrawingState(uint256,uint256) (contracts/Jackpot.sol#1478-1517)
+	- Jackpot._unlockJackpot() (contracts/Jackpot.sol#1724-1727)
+	- Jackpot.currentDrawingId (contracts/Jackpot.sol#211)
+	- Jackpot.disableEmergencyMode() (contracts/Jackpot.sol#1270-1274)
+	- Jackpot.disableTicketPurchases() (contracts/Jackpot.sol#1345-1350)
+	- Jackpot.enableEmergencyMode() (contracts/Jackpot.sol#1250-1254)
+	- Jackpot.enableTicketPurchases() (contracts/Jackpot.sol#1325-1330)
+	- Jackpot.getEntropyCallbackFee() (contracts/Jackpot.sol#1461-1464)
+	- Jackpot.initializeJackpot(uint256) (contracts/Jackpot.sol#852-862)
+	- Jackpot.initializeLPDeposits(uint256) (contracts/Jackpot.sol#820-831)
+	- Jackpot.initiateWithdraw(uint256) (contracts/Jackpot.sol#506-511)
+	- Jackpot.lockJackpot() (contracts/Jackpot.sol#1289-1292)
+	- Jackpot.setBonusballMin(uint8) (contracts/Jackpot.sol#990-996)
+	- Jackpot.setDrawingDurationInSeconds(uint256) (contracts/Jackpot.sol#969-975)
+	- Jackpot.setEntropy(IScaledEntropyProvider) (contracts/Jackpot.sol#1193-1199)
+	- Jackpot.setEntropyBaseGasLimit(uint32) (contracts/Jackpot.sol#1211-1216)
+	- Jackpot.setEntropyVariableGasLimit(uint32) (contracts/Jackpot.sol#1229-1234)
+	- Jackpot.setGovernancePoolCap(uint256) (contracts/Jackpot.sol#946-954)
+	- Jackpot.setLpEdgeTarget(uint256) (contracts/Jackpot.sol#1012-1020)
+	- Jackpot.setMaxReferrers(uint256) (contracts/Jackpot.sol#1149-1155)
+	- Jackpot.setNormalBallMax(uint8) (contracts/Jackpot.sol#886-893)
+	- Jackpot.setPayoutCalculator(IPayoutCalculator) (contracts/Jackpot.sol#1171-1177)
+	- Jackpot.setProtocolFee(uint256) (contracts/Jackpot.sol#923-929)
+	- Jackpot.setProtocolFeeAddress(address) (contracts/Jackpot.sol#1101-1107)
+	- Jackpot.setProtocolFeeThreshold(uint256) (contracts/Jackpot.sol#905-910)
+	- Jackpot.setReferralFee(uint256) (contracts/Jackpot.sol#1059-1065)
+	- Jackpot.setReferralWinShare(uint256) (contracts/Jackpot.sol#1080-1086)
+	- Jackpot.setReserveRatio(uint256) (contracts/Jackpot.sol#1036-1044)
+	- Jackpot.setTicketPrice(uint256) (contracts/Jackpot.sol#1127-1134)
+	- Jackpot.unlockJackpot() (contracts/Jackpot.sol#1307-1310)
+Reentrancy in Jackpot.scaledEntropyCallback(bytes32,uint256[][],bytes) (contracts/Jackpot.sol#717-749):
+	External calls:
+	- (winningNumbers,drawingUserWinnings) = _calculateDrawingUserWinnings(currentDrawingState,_randomNumbers) (contracts/Jackpot.sol#732)
+		- drawingUserWinnings = payoutCalculator.calculateAndStoreDrawingUserWinnings(currentDrawingId,_currentDrawingState.prizePool,_currentDrawingState.ballMax,_currentDrawingState.bonusballMax,uniqueResult,dupResult) (contracts/Jackpot.sol#1633-1640)
+	State variables written after the call(s):
+	- currentDrawingState.winningTicket = winningNumbers (contracts/Jackpot.sol#733)
+	Jackpot.drawingState (contracts/Jackpot.sol#202) can be used in cross function reentrancies:
+	- Jackpot._lockJackpot() (contracts/Jackpot.sol#1719-1722)
+	- Jackpot._setNewDrawingState(uint256,uint256) (contracts/Jackpot.sol#1478-1517)
+	- Jackpot._unlockJackpot() (contracts/Jackpot.sol#1724-1727)
+	- Jackpot.getDrawingState(uint256) (contracts/Jackpot.sol#1362-1364)
+	- Jackpot.getEntropyCallbackFee() (contracts/Jackpot.sol#1461-1464)
+	- Jackpot.getSubsetCount(uint256,uint8[],uint8) (contracts/Jackpot.sol#1401-1404)
+	- Jackpot.getTicketTierIds(uint256[]) (contracts/Jackpot.sol#1438-1446)
+	- Jackpot.getUnpackedTicket(uint256,uint256) (contracts/Jackpot.sol#1422-1424)
+	- Jackpot.initiateWithdraw(uint256) (contracts/Jackpot.sol#506-511)
+	- Jackpot.lockJackpot() (contracts/Jackpot.sol#1289-1292)
+	- Jackpot.unlockJackpot() (contracts/Jackpot.sol#1307-1310)
+Reentrancy in Jackpot.scaledEntropyCallback(bytes32,uint256[][],bytes) (contracts/Jackpot.sol#717-749):
+	External calls:
+	- (winningNumbers,drawingUserWinnings) = _calculateDrawingUserWinnings(currentDrawingState,_randomNumbers) (contracts/Jackpot.sol#732)
+		- drawingUserWinnings = payoutCalculator.calculateAndStoreDrawingUserWinnings(currentDrawingId,_currentDrawingState.prizePool,_currentDrawingState.ballMax,_currentDrawingState.bonusballMax,uniqueResult,dupResult) (contracts/Jackpot.sol#1633-1640)
+	- (newLpValue,newAccumulatorValue) = jackpotLPManager.processDrawingSettlement(currentDrawingId,currentDrawingState.lpEarnings,drawingUserWinnings,protocolFeeAmount) (contracts/Jackpot.sol#737-745)
+	- _setNewDrawingState(newLpValue,currentDrawingState.drawingTime + drawingDurationInSeconds) (contracts/Jackpot.sol#747)
+		- jackpotLPManager.initializeDrawingLP(currentDrawingId,_newLpValue) (contracts/Jackpot.sol#1481)
+		- payoutCalculator.setDrawingTierInfo(currentDrawingId) (contracts/Jackpot.sol#1505)
+	State variables written after the call(s):
+	- _setNewDrawingState(newLpValue,currentDrawingState.drawingTime + drawingDurationInSeconds) (contracts/Jackpot.sol#747)
+		- currentDrawingId ++ (contracts/Jackpot.sol#1479)
+	Jackpot.currentDrawingId (contracts/Jackpot.sol#211) can be used in cross function reentrancies:
+	- Jackpot._lockJackpot() (contracts/Jackpot.sol#1719-1722)
+	- Jackpot._setNewDrawingState(uint256,uint256) (contracts/Jackpot.sol#1478-1517)
+	- Jackpot._unlockJackpot() (contracts/Jackpot.sol#1724-1727)
+	- Jackpot.currentDrawingId (contracts/Jackpot.sol#211)
+	- Jackpot.disableEmergencyMode() (contracts/Jackpot.sol#1270-1274)
+	- Jackpot.disableTicketPurchases() (contracts/Jackpot.sol#1345-1350)
+	- Jackpot.enableEmergencyMode() (contracts/Jackpot.sol#1250-1254)
+	- Jackpot.enableTicketPurchases() (contracts/Jackpot.sol#1325-1330)
+	- Jackpot.getEntropyCallbackFee() (contracts/Jackpot.sol#1461-1464)
+	- Jackpot.initializeJackpot(uint256) (contracts/Jackpot.sol#852-862)
+	- Jackpot.initializeLPDeposits(uint256) (contracts/Jackpot.sol#820-831)
+	- Jackpot.initiateWithdraw(uint256) (contracts/Jackpot.sol#506-511)
+	- Jackpot.lockJackpot() (contracts/Jackpot.sol#1289-1292)
+	- Jackpot.setBonusballMin(uint8) (contracts/Jackpot.sol#990-996)
+	- Jackpot.setDrawingDurationInSeconds(uint256) (contracts/Jackpot.sol#969-975)
+	- Jackpot.setEntropy(IScaledEntropyProvider) (contracts/Jackpot.sol#1193-1199)
+	- Jackpot.setEntropyBaseGasLimit(uint32) (contracts/Jackpot.sol#1211-1216)
+	- Jackpot.setEntropyVariableGasLimit(uint32) (contracts/Jackpot.sol#1229-1234)
+	- Jackpot.setGovernancePoolCap(uint256) (contracts/Jackpot.sol#946-954)
+	- Jackpot.setLpEdgeTarget(uint256) (contracts/Jackpot.sol#1012-1020)
+	- Jackpot.setMaxReferrers(uint256) (contracts/Jackpot.sol#1149-1155)
+	- Jackpot.setNormalBallMax(uint8) (contracts/Jackpot.sol#886-893)
+	- Jackpot.setPayoutCalculator(IPayoutCalculator) (contracts/Jackpot.sol#1171-1177)
+	- Jackpot.setProtocolFee(uint256) (contracts/Jackpot.sol#923-929)
+	- Jackpot.setProtocolFeeAddress(address) (contracts/Jackpot.sol#1101-1107)
+	- Jackpot.setProtocolFeeThreshold(uint256) (contracts/Jackpot.sol#905-910)
+	- Jackpot.setReferralFee(uint256) (contracts/Jackpot.sol#1059-1065)
+	- Jackpot.setReferralWinShare(uint256) (contracts/Jackpot.sol#1080-1086)
+	- Jackpot.setReserveRatio(uint256) (contracts/Jackpot.sol#1036-1044)
+	- Jackpot.setTicketPrice(uint256) (contracts/Jackpot.sol#1127-1134)
+	- Jackpot.unlockJackpot() (contracts/Jackpot.sol#1307-1310)
+	- _setNewDrawingState(newLpValue,currentDrawingState.drawingTime + drawingDurationInSeconds) (contracts/Jackpot.sol#747)
+		- newDrawingState.prizePool = newPrizePool (contracts/Jackpot.sol#1485)
+		- newDrawingState.ticketPrice = ticketPrice (contracts/Jackpot.sol#1486)
+		- newDrawingState.edgePerTicket = lpEdgeTarget * ticketPrice / PRECISE_UNIT (contracts/Jackpot.sol#1487)
+		- newDrawingState.globalTicketsBought = 0 (contracts/Jackpot.sol#1488)
+		- newDrawingState.lpEarnings = 0 (contracts/Jackpot.sol#1489)
+		- newDrawingState.ballMax = normalBallMax (contracts/Jackpot.sol#1490)
+		- newDrawingState.drawingTime = _nextDrawingTime (contracts/Jackpot.sol#1491)
+		- newDrawingState.jackpotLock = false (contracts/Jackpot.sol#1492)
+		- newDrawingState.bonusballMax = newBonusball (contracts/Jackpot.sol#1497)
+		- newDrawingState.referralWinShare = referralWinShare (contracts/Jackpot.sol#1504)
+	Jackpot.drawingState (contracts/Jackpot.sol#202) can be used in cross function reentrancies:
+	- Jackpot._lockJackpot() (contracts/Jackpot.sol#1719-1722)
+	- Jackpot._setNewDrawingState(uint256,uint256) (contracts/Jackpot.sol#1478-1517)
+	- Jackpot._unlockJackpot() (contracts/Jackpot.sol#1724-1727)
+	- Jackpot.getDrawingState(uint256) (contracts/Jackpot.sol#1362-1364)
+	- Jackpot.getEntropyCallbackFee() (contracts/Jackpot.sol#1461-1464)
+	- Jackpot.getSubsetCount(uint256,uint8[],uint8) (contracts/Jackpot.sol#1401-1404)
+	- Jackpot.getTicketTierIds(uint256[]) (contracts/Jackpot.sol#1438-1446)
+	- Jackpot.getUnpackedTicket(uint256,uint256) (contracts/Jackpot.sol#1422-1424)
+	- Jackpot.initiateWithdraw(uint256) (contracts/Jackpot.sol#506-511)
+	- Jackpot.lockJackpot() (contracts/Jackpot.sol#1289-1292)
+	- Jackpot.unlockJackpot() (contracts/Jackpot.sol#1307-1310)
+Reentrancy in Jackpot.setNormalBallMax(uint8) (contracts/Jackpot.sol#886-893):
+	External calls:
+	- jackpotLPManager.setLPPoolCap(currentDrawingId,_calculateLpPoolCap(_normalBallMax)) (contracts/Jackpot.sol#889)
+	State variables written after the call(s):
+	- normalBallMax = _normalBallMax (contracts/Jackpot.sol#890)
+	Jackpot.normalBallMax (contracts/Jackpot.sol#217) can be used in cross function reentrancies:
+	- Jackpot._setNewDrawingState(uint256,uint256) (contracts/Jackpot.sol#1478-1517)
+	- Jackpot.constructor(uint256,uint8,uint8,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint32) (contracts/Jackpot.sol#296-325)
+	- Jackpot.initializeLPDeposits(uint256) (contracts/Jackpot.sol#820-831)
+	- Jackpot.normalBallMax (contracts/Jackpot.sol#217)
+	- Jackpot.setGovernancePoolCap(uint256) (contracts/Jackpot.sol#946-954)
+	- Jackpot.setLpEdgeTarget(uint256) (contracts/Jackpot.sol#1012-1020)
+	- Jackpot.setNormalBallMax(uint8) (contracts/Jackpot.sol#886-893)
+	- Jackpot.setReserveRatio(uint256) (contracts/Jackpot.sol#1036-1044)
+	- Jackpot.setTicketPrice(uint256) (contracts/Jackpot.sol#1127-1134)
+Reentrancy in EntropyMock.triggerCallback(uint64,address,bytes32) (contracts/mocks/EntropyMock.sol#56-85):
+	External calls:
+	- (success,returnData) = pending.consumer.call(abi.encodeWithSignature(_entropyCallback(uint64,address,bytes32),sequence,provider,randomNumber)) (contracts/mocks/EntropyMock.sol#65-67)
+	State variables written after the call(s):
+	- delete pendingCallbacks[sequence] (contracts/mocks/EntropyMock.sol#83)
+	EntropyMock.pendingCallbacks (contracts/mocks/EntropyMock.sol#15) can be used in cross function reentrancies:
+	- EntropyMock.addPendingRequest(uint64,address,bytes32) (contracts/mocks/EntropyMock.sol#100-105)
+	- EntropyMock.getPendingRequest(uint64) (contracts/mocks/EntropyMock.sol#96-98)
+	- EntropyMock.requestV2(address,uint32) (contracts/mocks/EntropyMock.sol#21-36)
+	- EntropyMock.requestV2(address,bytes32,uint32) (contracts/mocks/EntropyMock.sol#38-54)
+	- EntropyMock.triggerCallback(uint64,address,bytes32) (contracts/mocks/EntropyMock.sol#56-85)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-1
+
+INFO:Detectors:
+TicketComboTracker.unpackTicket(uint256,uint8).p (contracts/lib/TicketComboTracker.sol#334) is a local variable never initialized
+Combinations.generateSubsets(uint256,uint256).mapped (contracts/lib/Combinations.sol#47) is a local variable never initialized
+GuaranteedMinimumPayoutCalculator.calculateAndStoreDrawingUserWinnings(uint256,uint256,uint8,uint8,uint256[],uint256[]).tierWinners (contracts/GuaranteedMinimumPayoutCalculator.sol#183) is a local variable never initialized
+GuaranteedMinimumPayoutCalculator.getDrawingTierPayouts(uint256).drawingTierPayouts (contracts/GuaranteedMinimumPayoutCalculator.sol#361) is a local variable never initialized
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#uninitialized-local-variables
+
+//@audit-q 
+INFO:Detectors:
+Jackpot.runJackpot() (contracts/Jackpot.sol#646-691) ignores return value by entropy.requestAndCallbackScaledRandomness{value: fee}(entropyGasLimit,setRequests,this.scaledEntropyCallback.selector,bytes()) (contracts/Jackpot.sol#683-688)
+Jackpot.initializeJackpot(uint256) (contracts/Jackpot.sol#852-862) ignores return value by (newLpValue,None) = jackpotLPManager.processDrawingSettlement(0,0,0,0) (contracts/Jackpot.sol#858-860)
+Jackpot.getUnpackedTicket(uint256,uint256) (contracts/Jackpot.sol#1422-1424) ignores return value by TicketComboTracker.unpackTicket(_packedTicket,drawingState[_drawingId].ballMax) (contracts/Jackpot.sol#1423)
+JackpotBridgeManager.buyTickets(IJackpot.Ticket[],address,address[],uint256[],bytes32) (contracts/JackpotBridgeManager.sol#166-198) ignores return value by usdc.approve(address(jackpot),ticketCost) (contracts/JackpotBridgeManager.sol#183)
+JackpotBridgeManager._bridgeFunds(JackpotBridgeManager.RelayTxData,uint256) (contracts/JackpotBridgeManager.sol#345-362) ignores return value by usdc.approve(_bridgeDetails.approveTo,_claimedAmount) (contracts/JackpotBridgeManager.sol#350)
+TicketComboTrackerTester.insert(uint8[],uint8) (contracts/mocks/TicketComboTrackerTester.sol#16-18) ignores return value by tracker.insert(normalBalls,bonusball) (contracts/mocks/TicketComboTrackerTester.sol#17)
+TicketComboTrackerTester.countTierMatchesWithBonusball(uint8[],uint8) (contracts/mocks/TicketComboTrackerTester.sol#20-28) ignores return value by tracker.countTierMatchesWithBonusball(normalBalls,bonusball) (contracts/mocks/TicketComboTrackerTester.sol#27)
+TicketComboTrackerTester.unpackTicket(uint256,uint8) (contracts/mocks/TicketComboTrackerTester.sol#58-60) ignores return value by TicketComboTracker.unpackTicket(_packedTicket,_normalMax) (contracts/mocks/TicketComboTrackerTester.sol#59)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#unused-return
+
+INFO:Detectors:
+JackpotBridgeManager.constructor(IJackpot,IJackpotTicketNFT,IERC20,string,string)._name (contracts/JackpotBridgeManager.sol#128) shadows:
+	- EIP712._name (node_modules/@openzeppelin/contracts/utils/cryptography/EIP712.sol#49) (state variable)
+JackpotBridgeManager.constructor(IJackpot,IJackpotTicketNFT,IERC20,string,string)._version (contracts/JackpotBridgeManager.sol#129) shadows:
+	- EIP712._version (node_modules/@openzeppelin/contracts/utils/cryptography/EIP712.sol#50) (state variable)
+ReentrantUSDCMock.constructor(uint256,string,string).name (contracts/mocks/ReentrantUSDCMock.sol#21) shadows:
+	- ERC20.name() (node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol#52-54) (function)
+	- IERC20Metadata.name() (node_modules/@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol#15) (function)
+ReentrantUSDCMock.constructor(uint256,string,string).symbol (contracts/mocks/ReentrantUSDCMock.sol#22) shadows:
+	- ERC20.symbol() (node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol#60-62) (function)
+	- IERC20Metadata.symbol() (node_modules/@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol#20) (function)
+USDCMock.constructor(uint256,string,string).name (contracts/mocks/USDCMock.sol#11) shadows:
+	- ERC20.name() (node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol#52-54) (function)
+	- IERC20Metadata.name() (node_modules/@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol#15) (function)
+USDCMock.constructor(uint256,string,string).symbol (contracts/mocks/USDCMock.sol#12) shadows:
+	- ERC20.symbol() (node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol#60-62) (function)
+	- IERC20Metadata.symbol() (node_modules/@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol#20) (function)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#local-variable-shadowing
+
+//@audit-q
+INFO:Detectors:
+Jackpot.initializeLPDeposits(uint256) (contracts/Jackpot.sol#820-831) should emit an event for: 
+	- governancePoolCap = _governancePoolCap (contracts/Jackpot.sol#826) 
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-events-arithmetic
+
+INFO:Detectors:
+Ownable2Step.transferOwnership(address).newOwner (node_modules/@openzeppelin/contracts/access/Ownable2Step.sol#43) lacks a zero-check on :
+		- _pendingOwner = newOwner (node_modules/@openzeppelin/contracts/access/Ownable2Step.sol#44)
+ETHRejectingContract.setCallbackTarget(address)._callbackTarget (contracts/mocks/ETHRejectingContract.sol#24) lacks a zero-check on :
+		- callbackTarget = _callbackTarget (contracts/mocks/ETHRejectingContract.sol#25)
+ETHRejectingContract.callRunJackpot(address,uint256)._jackpot (contracts/mocks/ETHRejectingContract.sol#60) lacks a zero-check on :
+		- (success,returnData) = _jackpot.call{value: _value}(abi.encodeWithSignature(runJackpot())) (contracts/mocks/ETHRejectingContract.sol#63-65)
+EntropyMock.triggerCallback(uint64,address,bytes32).provider (contracts/mocks/EntropyMock.sol#58) lacks a zero-check on :
+		- (success,returnData) = pending.consumer.call(abi.encodeWithSignature(_entropyCallback(uint64,address,bytes32),sequence,provider,randomNumber)) (contracts/mocks/EntropyMock.sol#65-67)
+ReentrantUSDCMock.setCallbackTarget(address)._target (contracts/mocks/ReentrantUSDCMock.sol#39) lacks a zero-check on :
+		- callbackTarget = _target (contracts/mocks/ReentrantUSDCMock.sol#40)
+ScaledEntropyProviderMock.constructor(uint256,address,bytes4)._callback (contracts/mocks/ScaledEntropyProviderMock.sol#23) lacks a zero-check on :
+		- callback = _callback (contracts/mocks/ScaledEntropyProviderMock.sol#27)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-zero-address-validation
+
+//@audit-q
+INFO:Detectors:
+Jackpot._validateAndStoreTickets(Jackpot.DrawingState,IJackpot.Ticket[],address,bytes32,bytes32) (contracts/Jackpot.sol#1571-1612) has external calls inside a loop: jackpotNFT.mintTicket(_recipient,ticketId,currentDrawingId,packedTicket,_referralSchemeId) (contracts/Jackpot.sol#1594)
+	Calls stack containing the loop:
+		Jackpot.buyTickets(IJackpot.Ticket[],address,address[],uint256[],bytes32)
+Jackpot.claimWinnings(uint256[]) (contracts/Jackpot.sol#418-452) has external calls inside a loop: ticketInfo = jackpotNFT.getTicketInfo(ticketId) (contracts/Jackpot.sol#424)
+Jackpot.claimWinnings(uint256[]) (contracts/Jackpot.sol#418-452) has external calls inside a loop: IERC721(address(jackpotNFT)).ownerOf(ticketId) != msg.sender (contracts/Jackpot.sol#426)
+Jackpot.claimWinnings(uint256[]) (contracts/Jackpot.sol#418-452) has external calls inside a loop: jackpotNFT.burnTicket(ticketId) (contracts/Jackpot.sol#431)
+Jackpot.claimWinnings(uint256[]) (contracts/Jackpot.sol#418-452) has external calls inside a loop: winningAmount = payoutCalculator.getTierPayout(drawingId,tierId) (contracts/Jackpot.sol#433)
+Jackpot.emergencyRefundTickets(uint256[]) (contracts/Jackpot.sol#581-601) has external calls inside a loop: ticketInfo = jackpotNFT.getTicketInfo(ticketId) (contracts/Jackpot.sol#586)
+Jackpot.emergencyRefundTickets(uint256[]) (contracts/Jackpot.sol#581-601) has external calls inside a loop: IERC721(address(jackpotNFT)).ownerOf(ticketId) != msg.sender (contracts/Jackpot.sol#589)
+Jackpot.emergencyRefundTickets(uint256[]) (contracts/Jackpot.sol#581-601) has external calls inside a loop: jackpotNFT.burnTicket(ticketId) (contracts/Jackpot.sol#596)
+Jackpot.getTicketTierIds(uint256[]) (contracts/Jackpot.sol#1438-1446) has external calls inside a loop: ticket = jackpotNFT.getTicketInfo(_ticketIds[i]) (contracts/Jackpot.sol#1441)
+JackpotBridgeManager._updateTicketOwnership(uint256[],address) (contracts/JackpotBridgeManager.sol#364-370) has external calls inside a loop: IERC721(address(jackpotTicketNFT)).safeTransferFrom(address(this),_recipient,ticketId) (contracts/JackpotBridgeManager.sol#368)
+	Calls stack containing the loop:
+		JackpotBridgeManager.claimTickets(uint256[],address,bytes)
+JackpotTicketNFT._getExtendedTicketInfo(uint256) (contracts/JackpotTicketNFT.sol#198-206) has external calls inside a loop: (normals,bonusball) = jackpot.getUnpackedTicket(tickets[_ticketId].drawingId,tickets[_ticketId].packedTicket) (contracts/JackpotTicketNFT.sol#199)
+	Calls stack containing the loop:
+		JackpotTicketNFT.getUserTickets(address,uint256)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation/#calls-inside-a-loop
+
+//@audit-q
+INFO:Detectors:
+Reentrancy in Jackpot._setNewDrawingState(uint256,uint256) (contracts/Jackpot.sol#1478-1517):
+	External calls:
+	- jackpotLPManager.initializeDrawingLP(currentDrawingId,_newLpValue) (contracts/Jackpot.sol#1481)
+	State variables written after the call(s):
+	- newDrawingState.prizePool = newPrizePool (contracts/Jackpot.sol#1485)
+	- newDrawingState.ticketPrice = ticketPrice (contracts/Jackpot.sol#1486)
+	- newDrawingState.edgePerTicket = lpEdgeTarget * ticketPrice / PRECISE_UNIT (contracts/Jackpot.sol#1487)
+	- newDrawingState.globalTicketsBought = 0 (contracts/Jackpot.sol#1488)
+	- newDrawingState.lpEarnings = 0 (contracts/Jackpot.sol#1489)
+	- newDrawingState.ballMax = normalBallMax (contracts/Jackpot.sol#1490)
+	- newDrawingState.drawingTime = _nextDrawingTime (contracts/Jackpot.sol#1491)
+	- newDrawingState.jackpotLock = false (contracts/Jackpot.sol#1492)
+	- newDrawingState.bonusballMax = newBonusball (contracts/Jackpot.sol#1497)
+	- newDrawingState.referralWinShare = referralWinShare (contracts/Jackpot.sol#1504)
+Reentrancy in JackpotBridgeManager.buyTickets(IJackpot.Ticket[],address,address[],uint256[],bytes32) (contracts/JackpotBridgeManager.sol#166-198):
+	External calls:
+	- usdc.approve(address(jackpot),ticketCost) (contracts/JackpotBridgeManager.sol#183)
+	- ticketIds = jackpot.buyTickets(_tickets,address(this),_referrers,_referralSplitBps,_source) (contracts/JackpotBridgeManager.sol#184)
+	State variables written after the call(s):
+	- ticketOwner[ticketIds[i]] = _recipient (contracts/JackpotBridgeManager.sol#191)
+Reentrancy in ScaledEntropyProvider.requestAndCallbackScaledRandomness(uint32,IScaledEntropyProvider.SetRequest[],bytes4,bytes) (contracts/ScaledEntropyProvider.sol#133-150):
+	External calls:
+	- sequence = entropy.requestV2{value: msg.value}(entropyProvider,_gasLimit) (contracts/ScaledEntropyProvider.sol#148)
+	State variables written after the call(s):
+	- _storePendingRequest(sequence,_selector,_context,_requests) (contracts/ScaledEntropyProvider.sol#149)
+		- pending[sequence].callback = msg.sender (contracts/ScaledEntropyProvider.sol#306)
+		- pending[sequence].selector = _selector (contracts/ScaledEntropyProvider.sol#307)
+		- pending[sequence].context = _context (contracts/ScaledEntropyProvider.sol#308)
+		- pending[sequence].setRequests.push(_setRequests[i]) (contracts/ScaledEntropyProvider.sol#310)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-2
+INFO:Detectors:
+Reentrancy in JackpotBridgeManager._bridgeFunds(JackpotBridgeManager.RelayTxData,uint256) (contracts/JackpotBridgeManager.sol#345-362):
+	External calls:
+	- usdc.approve(_bridgeDetails.approveTo,_claimedAmount) (contracts/JackpotBridgeManager.sol#350)
+	- (success,None) = _bridgeDetails.to.call(_bridgeDetails.data) (contracts/JackpotBridgeManager.sol#354)
+	Event emitted after the call(s):
+	- FundsBridged(_bridgeDetails.to,_claimedAmount) (contracts/JackpotBridgeManager.sol#361)
+Reentrancy in Jackpot._setNewDrawingState(uint256,uint256) (contracts/Jackpot.sol#1478-1517):
+	External calls:
+	- jackpotLPManager.initializeDrawingLP(currentDrawingId,_newLpValue) (contracts/Jackpot.sol#1481)
+	- payoutCalculator.setDrawingTierInfo(currentDrawingId) (contracts/Jackpot.sol#1505)
+	Event emitted after the call(s):
+	- NewDrawingInitialized(currentDrawingId,_newLpValue,newPrizePool,ticketPrice,normalBallMax,newBonusball,referralWinShare,_nextDrawingTime) (contracts/Jackpot.sol#1507-1516)
+Reentrancy in ScaledEntropyProvider.entropyCallback(uint64,address,bytes32) (contracts/ScaledEntropyProvider.sol#245-257):
+	External calls:
+	- (success,None) = req.callback.call(abi.encodeWithSelector(req.selector,sequence,scaledRandomNumbers,req.context)) (contracts/ScaledEntropyProvider.sol#252)
+	Event emitted after the call(s):
+	- EntropyFulfilled(sequence,randomNumber) (contracts/ScaledEntropyProvider.sol#255)
+	- ScaledRandomnessDelivered(sequence,req.callback,scaledRandomNumbers.length) (contracts/ScaledEntropyProvider.sol#256)
+Reentrancy in Jackpot.initializeJackpot(uint256) (contracts/Jackpot.sol#852-862):
+	External calls:
+	- (newLpValue,None) = jackpotLPManager.processDrawingSettlement(0,0,0,0) (contracts/Jackpot.sol#858-860)
+	- _setNewDrawingState(newLpValue,_initialDrawingTime) (contracts/Jackpot.sol#861)
+		- jackpotLPManager.initializeDrawingLP(currentDrawingId,_newLpValue) (contracts/Jackpot.sol#1481)
+		- payoutCalculator.setDrawingTierInfo(currentDrawingId) (contracts/Jackpot.sol#1505)
+	Event emitted after the call(s):
+	- NewDrawingInitialized(currentDrawingId,_newLpValue,newPrizePool,ticketPrice,normalBallMax,newBonusball,referralWinShare,_nextDrawingTime) (contracts/Jackpot.sol#1507-1516)
+		- _setNewDrawingState(newLpValue,_initialDrawingTime) (contracts/Jackpot.sol#861)
+Reentrancy in Jackpot.setGovernancePoolCap(uint256) (contracts/Jackpot.sol#946-954):
+	External calls:
+	- jackpotLPManager.setLPPoolCap(currentDrawingId,_calculateLpPoolCap(normalBallMax)) (contracts/Jackpot.sol#951)
+	Event emitted after the call(s):
+	- GovernancePoolCapUpdated(currentDrawingId,oldGovernancePoolCap,_governancePoolCap) (contracts/Jackpot.sol#953)
+Reentrancy in Jackpot.setLpEdgeTarget(uint256) (contracts/Jackpot.sol#1012-1020):
+	External calls:
+	- jackpotLPManager.setLPPoolCap(currentDrawingId,_calculateLpPoolCap(normalBallMax)) (contracts/Jackpot.sol#1017)
+	Event emitted after the call(s):
+	- LpEdgeTargetUpdated(currentDrawingId,oldLpEdgeTarget,_lpEdgeTarget) (contracts/Jackpot.sol#1019)
+Reentrancy in Jackpot.setNormalBallMax(uint8) (contracts/Jackpot.sol#886-893):
+	External calls:
+	- jackpotLPManager.setLPPoolCap(currentDrawingId,_calculateLpPoolCap(_normalBallMax)) (contracts/Jackpot.sol#889)
+	Event emitted after the call(s):
+	- NormalBallMaxUpdated(currentDrawingId,oldNormalBallMax,_normalBallMax) (contracts/Jackpot.sol#892)
+Reentrancy in Jackpot.setReserveRatio(uint256) (contracts/Jackpot.sol#1036-1044):
+	External calls:
+	- jackpotLPManager.setLPPoolCap(currentDrawingId,_calculateLpPoolCap(normalBallMax)) (contracts/Jackpot.sol#1041)
+	Event emitted after the call(s):
+	- ReserveRatioUpdated(currentDrawingId,oldReserveRatio,_reserveRatio) (contracts/Jackpot.sol#1043)
+Reentrancy in Jackpot.setTicketPrice(uint256) (contracts/Jackpot.sol#1127-1134):
+	External calls:
+	- jackpotLPManager.setLPPoolCap(currentDrawingId,_calculateLpPoolCap(normalBallMax)) (contracts/Jackpot.sol#1131)
+	Event emitted after the call(s):
+	- TicketPriceUpdated(currentDrawingId,oldTicketPrice,_ticketPrice) (contracts/Jackpot.sol#1133)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-3
+
+INFO:Detectors:
+Jackpot.runJackpot() (contracts/Jackpot.sol#646-691) uses timestamp for comparisons
+	Dangerous comparisons:
+	- currentDrawingState.drawingTime >= block.timestamp (contracts/Jackpot.sol#649)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#block-timestamp
+
+INFO:Detectors:
+SafeERC20._callOptionalReturn(IERC20,bytes) (node_modules/@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol#173-191) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol#176-186)
+SafeERC20._callOptionalReturnBool(IERC20,bytes) (node_modules/@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol#201-211) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol#205-209)
+Panic.panic(uint256) (node_modules/@openzeppelin/contracts/utils/Panic.sol#50-56) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/Panic.sol#51-55)
+ShortStrings.toString(ShortString) (node_modules/@openzeppelin/contracts/utils/ShortStrings.sol#63-72) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/ShortStrings.sol#67-70)
+StorageSlot.getAddressSlot(bytes32) (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#66-70) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#67-69)
+StorageSlot.getBooleanSlot(bytes32) (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#75-79) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#76-78)
+StorageSlot.getBytes32Slot(bytes32) (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#84-88) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#85-87)
+StorageSlot.getUint256Slot(bytes32) (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#93-97) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#94-96)
+StorageSlot.getInt256Slot(bytes32) (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#102-106) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#103-105)
+StorageSlot.getStringSlot(bytes32) (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#111-115) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#112-114)
+StorageSlot.getStringSlot(string) (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#120-124) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#121-123)
+StorageSlot.getBytesSlot(bytes32) (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#129-133) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#130-132)
+StorageSlot.getBytesSlot(bytes) (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#138-142) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#139-141)
+Strings.toString(uint256) (node_modules/@openzeppelin/contracts/utils/Strings.sol#45-63) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/Strings.sol#50-52)
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/Strings.sol#55-57)
+Strings.toChecksumHexString(address) (node_modules/@openzeppelin/contracts/utils/Strings.sol#111-129) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/Strings.sol#116-118)
+Strings.escapeJSON(string) (node_modules/@openzeppelin/contracts/utils/Strings.sol#446-476) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/Strings.sol#470-473)
+Strings._unsafeReadBytesOffset(bytes,uint256) (node_modules/@openzeppelin/contracts/utils/Strings.sol#484-489) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/Strings.sol#486-488)
+TransientSlot.tload(TransientSlot.AddressSlot) (node_modules/@openzeppelin/contracts/utils/TransientSlot.sol#97-101) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/TransientSlot.sol#98-100)
+TransientSlot.tstore(TransientSlot.AddressSlot,address) (node_modules/@openzeppelin/contracts/utils/TransientSlot.sol#106-110) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/TransientSlot.sol#107-109)
+TransientSlot.tload(TransientSlot.BooleanSlot) (node_modules/@openzeppelin/contracts/utils/TransientSlot.sol#115-119) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/TransientSlot.sol#116-118)
+TransientSlot.tstore(TransientSlot.BooleanSlot,bool) (node_modules/@openzeppelin/contracts/utils/TransientSlot.sol#124-128) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/TransientSlot.sol#125-127)
+TransientSlot.tload(TransientSlot.Bytes32Slot) (node_modules/@openzeppelin/contracts/utils/TransientSlot.sol#133-137) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/TransientSlot.sol#134-136)
+TransientSlot.tstore(TransientSlot.Bytes32Slot,bytes32) (node_modules/@openzeppelin/contracts/utils/TransientSlot.sol#142-146) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/TransientSlot.sol#143-145)
+TransientSlot.tload(TransientSlot.Uint256Slot) (node_modules/@openzeppelin/contracts/utils/TransientSlot.sol#151-155) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/TransientSlot.sol#152-154)
+TransientSlot.tstore(TransientSlot.Uint256Slot,uint256) (node_modules/@openzeppelin/contracts/utils/TransientSlot.sol#160-164) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/TransientSlot.sol#161-163)
+TransientSlot.tload(TransientSlot.Int256Slot) (node_modules/@openzeppelin/contracts/utils/TransientSlot.sol#169-173) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/TransientSlot.sol#170-172)
+TransientSlot.tstore(TransientSlot.Int256Slot,int256) (node_modules/@openzeppelin/contracts/utils/TransientSlot.sol#178-182) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/TransientSlot.sol#179-181)
+ECDSA.tryRecover(bytes32,bytes) (node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol#56-75) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol#66-70)
+MessageHashUtils.toEthSignedMessageHash(bytes32) (node_modules/@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol#30-36) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol#31-35)
+MessageHashUtils.toDataWithIntendedValidatorHash(address,bytes32) (node_modules/@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol#69-79) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol#73-78)
+MessageHashUtils.toTypedDataHash(bytes32,bytes32) (node_modules/@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol#90-98) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol#91-97)
+Math.add512(uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#25-30) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/math/Math.sol#26-29)
+Math.mul512(uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#37-46) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/math/Math.sol#41-45)
+Math.tryMul(uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#73-84) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/math/Math.sol#76-80)
+Math.tryDiv(uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#89-97) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/math/Math.sol#92-95)
+Math.tryMod(uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#102-110) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/math/Math.sol#105-108)
+Math.mulDiv(uint256,uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#204-275) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/math/Math.sol#227-234)
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/math/Math.sol#240-249)
+Math.tryModExp(uint256,uint256,uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#409-433) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/math/Math.sol#411-432)
+Math.tryModExp(bytes,bytes,bytes) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#449-471) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/math/Math.sol#461-470)
+Math.log2(uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#612-651) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/math/Math.sol#648-650)
+SafeCast.toUint(bool) (node_modules/@openzeppelin/contracts/utils/math/SafeCast.sol#1157-1161) uses assembly
+	- INLINE ASM (node_modules/@openzeppelin/contracts/utils/math/SafeCast.sol#1158-1160)
+Jackpot.runJackpot() (contracts/Jackpot.sol#646-691) uses assembly
+	- INLINE ASM (contracts/Jackpot.sol#660-662)
+ETHRejectingContract.receive() (contracts/mocks/ETHRejectingContract.sol#35-53) uses assembly
+	- INLINE ASM (contracts/mocks/ETHRejectingContract.sol#44-46)
+ETHRejectingContract.callRunJackpot(address,uint256) (contracts/mocks/ETHRejectingContract.sol#59-73) uses assembly
+	- INLINE ASM (contracts/mocks/ETHRejectingContract.sol#69-71)
+EntropyMock.triggerCallback(uint64,address,bytes32) (contracts/mocks/EntropyMock.sol#56-85) uses assembly
+	- INLINE ASM (contracts/mocks/EntropyMock.sol#72-75)
+ReentrantUSDCMock._executeCallback() (contracts/mocks/ReentrantUSDCMock.sol#119-130) uses assembly
+	- INLINE ASM (contracts/mocks/ReentrantUSDCMock.sol#123-125)
+ScaledEntropyProviderMock.randomnessCallback(uint256[][]) (contracts/mocks/ScaledEntropyProviderMock.sol#54-67) uses assembly
+	- INLINE ASM (contracts/mocks/ScaledEntropyProviderMock.sol#60-62)
+ERC721.ownerOf(uint256) (node_modules/solady/src/tokens/ERC721.sol#147-156) uses assembly
+	- INLINE ASM (node_modules/solady/src/tokens/ERC721.sol#150-155)
+ERC721.balanceOf(address) (node_modules/solady/src/tokens/ERC721.sol#162-174) uses assembly
+	- INLINE ASM (node_modules/solady/src/tokens/ERC721.sol#164-173)
+ERC721.getApproved(uint256) (node_modules/solady/src/tokens/ERC721.sol#180-192) uses assembly
+	- INLINE ASM (node_modules/solady/src/tokens/ERC721.sol#182-191)
+ERC721.isApprovedForAll(address,address) (node_modules/solady/src/tokens/ERC721.sol#207-220) uses assembly
+	- INLINE ASM (node_modules/solady/src/tokens/ERC721.sol#214-219)
+ERC721.setApprovalForAll(address,bool) (node_modules/solady/src/tokens/ERC721.sol#225-240) uses assembly
+	- INLINE ASM (node_modules/solady/src/tokens/ERC721.sol#227-239)
+ERC721.transferFrom(address,address,uint256) (node_modules/solady/src/tokens/ERC721.sol#252-310) uses assembly
+	- INLINE ASM (node_modules/solady/src/tokens/ERC721.sol#255-308)
+ERC721.supportsInterface(bytes4) (node_modules/solady/src/tokens/ERC721.sol#342-349) uses assembly
+	- INLINE ASM (node_modules/solady/src/tokens/ERC721.sol#344-348)
+ERC721._exists(uint256) (node_modules/solady/src/tokens/ERC721.sol#356-363) uses assembly
+	- INLINE ASM (node_modules/solady/src/tokens/ERC721.sol#358-362)
+ERC721._ownerOf(uint256) (node_modules/solady/src/tokens/ERC721.sol#367-374) uses assembly
+	- INLINE ASM (node_modules/solady/src/tokens/ERC721.sol#369-373)
+ERC721._getAux(address) (node_modules/solady/src/tokens/ERC721.sol#386-393) uses assembly
+	- INLINE ASM (node_modules/solady/src/tokens/ERC721.sol#388-392)
+ERC721._setAux(address,uint224) (node_modules/solady/src/tokens/ERC721.sol#398-407) uses assembly
+	- INLINE ASM (node_modules/solady/src/tokens/ERC721.sol#400-406)
+ERC721._getExtraData(uint256) (node_modules/solady/src/tokens/ERC721.sol#412-419) uses assembly
+	- INLINE ASM (node_modules/solady/src/tokens/ERC721.sol#414-418)
+ERC721._setExtraData(uint256,uint96) (node_modules/solady/src/tokens/ERC721.sol#424-433) uses assembly
+	- INLINE ASM (node_modules/solady/src/tokens/ERC721.sol#426-432)
+ERC721._mint(address,uint256) (node_modules/solady/src/tokens/ERC721.sol#447-482) uses assembly
+	- INLINE ASM (node_modules/solady/src/tokens/ERC721.sol#450-480)
+ERC721._mintAndSetExtraDataUnchecked(address,uint256,uint96) (node_modules/solady/src/tokens/ERC721.sol#492-519) uses assembly
+	- INLINE ASM (node_modules/solady/src/tokens/ERC721.sol#495-517)
+ERC721._burn(address,uint256) (node_modules/solady/src/tokens/ERC721.sol#559-604) uses assembly
+	- INLINE ASM (node_modules/solady/src/tokens/ERC721.sol#563-602)
+ERC721._isApprovedOrOwner(address,uint256) (node_modules/solady/src/tokens/ERC721.sol#614-644) uses assembly
+	- INLINE ASM (node_modules/solady/src/tokens/ERC721.sol#621-643)
+ERC721._getApproved(uint256) (node_modules/solady/src/tokens/ERC721.sol#648-655) uses assembly
+	- INLINE ASM (node_modules/solady/src/tokens/ERC721.sol#650-654)
+ERC721._approve(address,address,uint256) (node_modules/solady/src/tokens/ERC721.sol#670-701) uses assembly
+	- INLINE ASM (node_modules/solady/src/tokens/ERC721.sol#672-700)
+ERC721._setApprovalForAll(address,address,bool) (node_modules/solady/src/tokens/ERC721.sol#707-723) uses assembly
+	- INLINE ASM (node_modules/solady/src/tokens/ERC721.sol#709-722)
+ERC721._transfer(address,address,address,uint256) (node_modules/solady/src/tokens/ERC721.sol#745-805) uses assembly
+	- INLINE ASM (node_modules/solady/src/tokens/ERC721.sol#748-803)
+ERC721._hasCode(address) (node_modules/solady/src/tokens/ERC721.sol#873-878) uses assembly
+	- INLINE ASM (node_modules/solady/src/tokens/ERC721.sol#875-877)
+ERC721._checkOnERC721Received(address,address,uint256,bytes) (node_modules/solady/src/tokens/ERC721.sol#882-912) uses assembly
+	- INLINE ASM (node_modules/solady/src/tokens/ERC721.sol#886-911)
+LibBit.fls(uint256) (node_modules/solady/src/utils/LibBit.sol#16-28) uses assembly
+	- INLINE ASM (node_modules/solady/src/utils/LibBit.sol#18-27)
+LibBit.clz(uint256) (node_modules/solady/src/utils/LibBit.sol#33-45) uses assembly
+	- INLINE ASM (node_modules/solady/src/utils/LibBit.sol#35-44)
+LibBit.ffs(uint256) (node_modules/solady/src/utils/LibBit.sol#53-69) uses assembly
+	- INLINE ASM (node_modules/solady/src/utils/LibBit.sol#55-68)
+LibBit.popCount(uint256) (node_modules/solady/src/utils/LibBit.sol#72-82) uses assembly
+	- INLINE ASM (node_modules/solady/src/utils/LibBit.sol#74-81)
+LibBit.countZeroBytes(uint256) (node_modules/solady/src/utils/LibBit.sol#86-92) uses assembly
+	- INLINE ASM (node_modules/solady/src/utils/LibBit.sol#88-91)
+LibBit.countZeroBytes(bytes) (node_modules/solady/src/utils/LibBit.sol#96-110) uses assembly
+	- INLINE ASM (node_modules/solady/src/utils/LibBit.sol#98-109)
+LibBit.countZeroBytesCalldata(bytes) (node_modules/solady/src/utils/LibBit.sol#114-131) uses assembly
+	- INLINE ASM (node_modules/solady/src/utils/LibBit.sol#116-130)
+LibBit.isPo2(uint256) (node_modules/solady/src/utils/LibBit.sol#134-140) uses assembly
+	- INLINE ASM (node_modules/solady/src/utils/LibBit.sol#136-139)
+LibBit.rawAnd(bool,bool) (node_modules/solady/src/utils/LibBit.sol#207-212) uses assembly
+	- INLINE ASM (node_modules/solady/src/utils/LibBit.sol#209-211)
+LibBit.and(bool,bool) (node_modules/solady/src/utils/LibBit.sol#215-220) uses assembly
+	- INLINE ASM (node_modules/solady/src/utils/LibBit.sol#217-219)
+LibBit.and(bool,bool,bool) (node_modules/solady/src/utils/LibBit.sol#223-228) uses assembly
+	- INLINE ASM (node_modules/solady/src/utils/LibBit.sol#225-227)
+LibBit.and(bool,bool,bool,bool) (node_modules/solady/src/utils/LibBit.sol#231-236) uses assembly
+	- INLINE ASM (node_modules/solady/src/utils/LibBit.sol#233-235)
+LibBit.rawOr(bool,bool) (node_modules/solady/src/utils/LibBit.sol#239-244) uses assembly
+	- INLINE ASM (node_modules/solady/src/utils/LibBit.sol#241-243)
+LibBit.or(bool,bool) (node_modules/solady/src/utils/LibBit.sol#247-252) uses assembly
+	- INLINE ASM (node_modules/solady/src/utils/LibBit.sol#249-251)
+LibBit.or(bool,bool,bool) (node_modules/solady/src/utils/LibBit.sol#255-260) uses assembly
+	- INLINE ASM (node_modules/solady/src/utils/LibBit.sol#257-259)
+LibBit.or(bool,bool,bool,bool) (node_modules/solady/src/utils/LibBit.sol#263-268) uses assembly
+	- INLINE ASM (node_modules/solady/src/utils/LibBit.sol#265-267)
+LibBit.rawToUint(bool) (node_modules/solady/src/utils/LibBit.sol#271-276) uses assembly
+	- INLINE ASM (node_modules/solady/src/utils/LibBit.sol#273-275)
+LibBit.toUint(bool) (node_modules/solady/src/utils/LibBit.sol#279-284) uses assembly
+	- INLINE ASM (node_modules/solady/src/utils/LibBit.sol#281-283)
+LibBit.countZeroBytes.asm_0.czb() (node_modules/solady/src/utils/LibBit.sol#99-103) uses assembly
+	- INLINE ASM (node_modules/solady/src/utils/LibBit.sol#99-103)
+LibBit.countZeroBytesCalldata.asm_0.czb() (node_modules/solady/src/utils/LibBit.sol#117-121) uses assembly
+	- INLINE ASM (node_modules/solady/src/utils/LibBit.sol#117-121)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#assembly-usage
+
+INFO:Detectors:
+11 different versions of Solidity are used:
+	- Version constraint ^0.8.20 is used by:
+		-^0.8.20 (node_modules/@openzeppelin/contracts/access/Ownable.sol#4)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/access/Ownable2Step.sol#4)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol#4)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol#4)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/utils/Context.sol#4)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/utils/Panic.sol#4)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/utils/ShortStrings.sol#4)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#5)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/utils/Strings.sol#4)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol#4)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/utils/cryptography/EIP712.sol#4)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol#4)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/utils/math/Math.sol#4)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/utils/math/SafeCast.sol#5)
+		-^0.8.20 (node_modules/@openzeppelin/contracts/utils/math/SignedMath.sol#4)
+	- Version constraint >=0.6.2 is used by:
+		->=0.6.2 (node_modules/@openzeppelin/contracts/interfaces/IERC1363.sol#4)
+		->=0.6.2 (node_modules/@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol#4)
+		->=0.6.2 (node_modules/@openzeppelin/contracts/token/ERC721/IERC721.sol#4)
+	- Version constraint >=0.4.16 is used by:
+		->=0.4.16 (node_modules/@openzeppelin/contracts/interfaces/IERC165.sol#4)
+		->=0.4.16 (node_modules/@openzeppelin/contracts/interfaces/IERC20.sol#4)
+		->=0.4.16 (node_modules/@openzeppelin/contracts/interfaces/IERC5267.sol#4)
+		->=0.4.16 (node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol#4)
+		->=0.4.16 (node_modules/@openzeppelin/contracts/utils/introspection/IERC165.sol#4)
+	- Version constraint >=0.8.4 is used by:
+		->=0.8.4 (node_modules/@openzeppelin/contracts/interfaces/draft-IERC6093.sol#3)
+	- Version constraint ^0.8.24 is used by:
+		-^0.8.24 (node_modules/@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol#4)
+		-^0.8.24 (node_modules/@openzeppelin/contracts/utils/TransientSlot.sol#5)
+	- Version constraint ^0.8.0 is used by:
+		-^0.8.0 (node_modules/@pythnetwork/entropy-sdk-solidity/EntropyEvents.sol#2)
+		-^0.8.0 (node_modules/@pythnetwork/entropy-sdk-solidity/EntropyEventsV2.sol#2)
+		-^0.8.0 (node_modules/@pythnetwork/entropy-sdk-solidity/EntropyStructs.sol#3)
+		-^0.8.0 (node_modules/@pythnetwork/entropy-sdk-solidity/EntropyStructsV2.sol#3)
+		-^0.8.0 (node_modules/@pythnetwork/entropy-sdk-solidity/IEntropyConsumer.sol#2)
+		-^0.8.0 (node_modules/@pythnetwork/entropy-sdk-solidity/IEntropyV2.sol#2)
+	- Version constraint ^0.8.28 is used by:
+		-^0.8.28 (contracts/GuaranteedMinimumPayoutCalculator.sol#13)
+		-^0.8.28 (contracts/Jackpot.sol#13)
+		-^0.8.28 (contracts/JackpotBridgeManager.sol#13)
+		-^0.8.28 (contracts/JackpotLPManager.sol#13)
+		-^0.8.28 (contracts/JackpotTicketNFT.sol#13)
+		-^0.8.28 (contracts/ScaledEntropyProvider.sol#13)
+		-^0.8.28 (contracts/interfaces/IJackpot.sol#3)
+		-^0.8.28 (contracts/interfaces/IJackpotLPManager.sol#3)
+		-^0.8.28 (contracts/interfaces/IJackpotTicketNFT.sol#3)
+		-^0.8.28 (contracts/interfaces/IPayoutCalculator.sol#12)
+		-^0.8.28 (contracts/interfaces/IScaledEntropyProvider.sol#3)
+		-^0.8.28 (contracts/lib/FisherYatesWithRejection.sol#2)
+		-^0.8.28 (contracts/lib/JackpotErrors.sol#13)
+		-^0.8.28 (contracts/lib/TicketComboTracker.sol#2)
+		-^0.8.28 (contracts/lib/UintCasts.sol#13)
+		-^0.8.28 (contracts/mocks/ETHRejectingContract.sol#2)
+		-^0.8.28 (contracts/mocks/EntropyCallbackMock.sol#3)
+		-^0.8.28 (contracts/mocks/EntropyMock.sol#3)
+		-^0.8.28 (contracts/mocks/MockDepository.sol#12)
+		-^0.8.28 (contracts/mocks/MockJackpot.sol#3)
+		-^0.8.28 (contracts/mocks/ScaledEntropyProviderMock.sol#3)
+		-^0.8.28 (contracts/mocks/TicketComboTrackerTester.sol#3)
+		-^0.8.28 (contracts/mocks/UintCastsTester.sol#3)
+	- Version constraint ^0.8 is used by:
+		-^0.8 (contracts/lib/Combinations.sol#2)
+	- Version constraint ^0.8.17 is used by:
+		-^0.8.17 (contracts/mocks/FisherYatesWithRejectionTester.sol#2)
+	- Version constraint ^0.8.18 is used by:
+		-^0.8.18 (contracts/mocks/ReentrantUSDCMock.sol#8)
+		-^0.8.18 (contracts/mocks/USDCMock.sol#5)
+	- Version constraint ^0.8.4 is used by:
+		-^0.8.4 (node_modules/solady/src/tokens/ERC721.sol#2)
+		-^0.8.4 (node_modules/solady/src/utils/LibBit.sol#2)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#different-pragma-directives-are-used
+
+INFO:Detectors:
+Version constraint ^0.8.20 contains known severe issues (https://solidity.readthedocs.io/en/latest/bugs.html)
+	- VerbatimInvalidDeduplication
+	- FullInlinerNonExpressionSplitArgumentEvaluationOrder
+	- MissingSideEffectsOnSelectorAccess.
+It is used by:
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/access/Ownable.sol#4)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/access/Ownable2Step.sol#4)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol#4)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol#4)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/utils/Context.sol#4)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/utils/Panic.sol#4)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/utils/ShortStrings.sol#4)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/utils/StorageSlot.sol#5)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/utils/Strings.sol#4)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol#4)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/utils/cryptography/EIP712.sol#4)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol#4)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/utils/math/Math.sol#4)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/utils/math/SafeCast.sol#5)
+	- ^0.8.20 (node_modules/@openzeppelin/contracts/utils/math/SignedMath.sol#4)
+Version constraint >=0.6.2 contains known severe issues (https://solidity.readthedocs.io/en/latest/bugs.html)
+	- MissingSideEffectsOnSelectorAccess
+	- AbiReencodingHeadOverflowWithStaticArrayCleanup
+	- DirtyBytesArrayToStorage
+	- NestedCalldataArrayAbiReencodingSizeValidation
+	- ABIDecodeTwoDimensionalArrayMemory
+	- KeccakCaching
+	- EmptyByteArrayCopy
+	- DynamicArrayCleanup
+	- MissingEscapingInFormatting
+	- ArraySliceDynamicallyEncodedBaseType
+	- ImplicitConstructorCallvalueCheck
+	- TupleAssignmentMultiStackSlotComponents
+	- MemoryArrayCreationOverflow.
+It is used by:
+	- >=0.6.2 (node_modules/@openzeppelin/contracts/interfaces/IERC1363.sol#4)
+	- >=0.6.2 (node_modules/@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol#4)
+	- >=0.6.2 (node_modules/@openzeppelin/contracts/token/ERC721/IERC721.sol#4)
+Version constraint >=0.4.16 contains known severe issues (https://solidity.readthedocs.io/en/latest/bugs.html)
+	- DirtyBytesArrayToStorage
+	- ABIDecodeTwoDimensionalArrayMemory
+	- KeccakCaching
+	- EmptyByteArrayCopy
+	- DynamicArrayCleanup
+	- ImplicitConstructorCallvalueCheck
+	- TupleAssignmentMultiStackSlotComponents
+	- MemoryArrayCreationOverflow
+	- privateCanBeOverridden
+	- SignedArrayStorageCopy
+	- ABIEncoderV2StorageArrayWithMultiSlotElement
+	- DynamicConstructorArgumentsClippedABIV2
+	- UninitializedFunctionPointerInConstructor_0.4.x
+	- IncorrectEventSignatureInLibraries_0.4.x
+	- ExpExponentCleanup
+	- NestedArrayFunctionCallDecoder
+	- ZeroFunctionSelector.
+It is used by:
+	- >=0.4.16 (node_modules/@openzeppelin/contracts/interfaces/IERC165.sol#4)
+	- >=0.4.16 (node_modules/@openzeppelin/contracts/interfaces/IERC20.sol#4)
+	- >=0.4.16 (node_modules/@openzeppelin/contracts/interfaces/IERC5267.sol#4)
+	- >=0.4.16 (node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol#4)
+	- >=0.4.16 (node_modules/@openzeppelin/contracts/utils/introspection/IERC165.sol#4)
+Version constraint >=0.8.4 contains known severe issues (https://solidity.readthedocs.io/en/latest/bugs.html)
+	- FullInlinerNonExpressionSplitArgumentEvaluationOrder
+	- MissingSideEffectsOnSelectorAccess
+	- AbiReencodingHeadOverflowWithStaticArrayCleanup
+	- DirtyBytesArrayToStorage
+	- DataLocationChangeInInternalOverride
+	- NestedCalldataArrayAbiReencodingSizeValidation
+	- SignedImmutables.
+It is used by:
+	- >=0.8.4 (node_modules/@openzeppelin/contracts/interfaces/draft-IERC6093.sol#3)
+Version constraint ^0.8.0 contains known severe issues (https://solidity.readthedocs.io/en/latest/bugs.html)
+	- FullInlinerNonExpressionSplitArgumentEvaluationOrder
+	- MissingSideEffectsOnSelectorAccess
+	- AbiReencodingHeadOverflowWithStaticArrayCleanup
+	- DirtyBytesArrayToStorage
+	- DataLocationChangeInInternalOverride
+	- NestedCalldataArrayAbiReencodingSizeValidation
+	- SignedImmutables
+	- ABIDecodeTwoDimensionalArrayMemory
+	- KeccakCaching.
+It is used by:
+	- ^0.8.0 (node_modules/@pythnetwork/entropy-sdk-solidity/EntropyEvents.sol#2)
+	- ^0.8.0 (node_modules/@pythnetwork/entropy-sdk-solidity/EntropyEventsV2.sol#2)
+	- ^0.8.0 (node_modules/@pythnetwork/entropy-sdk-solidity/EntropyStructs.sol#3)
+	- ^0.8.0 (node_modules/@pythnetwork/entropy-sdk-solidity/EntropyStructsV2.sol#3)
+	- ^0.8.0 (node_modules/@pythnetwork/entropy-sdk-solidity/IEntropyConsumer.sol#2)
+	- ^0.8.0 (node_modules/@pythnetwork/entropy-sdk-solidity/IEntropyV2.sol#2)
+Version constraint ^0.8 is too complex.
+It is used by:
+	- ^0.8 (contracts/lib/Combinations.sol#2)
+Version constraint ^0.8.17 contains known severe issues (https://solidity.readthedocs.io/en/latest/bugs.html)
+	- VerbatimInvalidDeduplication
+	- FullInlinerNonExpressionSplitArgumentEvaluationOrder
+	- MissingSideEffectsOnSelectorAccess.
+It is used by:
+	- ^0.8.17 (contracts/mocks/FisherYatesWithRejectionTester.sol#2)
+Version constraint ^0.8.18 contains known severe issues (https://solidity.readthedocs.io/en/latest/bugs.html)
+	- VerbatimInvalidDeduplication
+	- FullInlinerNonExpressionSplitArgumentEvaluationOrder
+	- MissingSideEffectsOnSelectorAccess.
+It is used by:
+	- ^0.8.18 (contracts/mocks/ReentrantUSDCMock.sol#8)
+	- ^0.8.18 (contracts/mocks/USDCMock.sol#5)
+Version constraint ^0.8.4 contains known severe issues (https://solidity.readthedocs.io/en/latest/bugs.html)
+	- FullInlinerNonExpressionSplitArgumentEvaluationOrder
+	- MissingSideEffectsOnSelectorAccess
+	- AbiReencodingHeadOverflowWithStaticArrayCleanup
+	- DirtyBytesArrayToStorage
+	- DataLocationChangeInInternalOverride
+	- NestedCalldataArrayAbiReencodingSizeValidation
+	- SignedImmutables.
+It is used by:
+	- ^0.8.4 (node_modules/solady/src/tokens/ERC721.sol#2)
+	- ^0.8.4 (node_modules/solady/src/utils/LibBit.sol#2)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#incorrect-versions-of-solidity
+
+INFO:Detectors:
+Low level call in Jackpot.runJackpot() (contracts/Jackpot.sol#646-691):
+	- (success,returndata) = address(msg.sender).call{value: msg.value - fee}() (contracts/Jackpot.sol#657)
+Low level call in JackpotBridgeManager._bridgeFunds(JackpotBridgeManager.RelayTxData,uint256) (contracts/JackpotBridgeManager.sol#345-362):
+	- (success,None) = _bridgeDetails.to.call(_bridgeDetails.data) (contracts/JackpotBridgeManager.sol#354)
+Low level call in ScaledEntropyProvider.entropyCallback(uint64,address,bytes32) (contracts/ScaledEntropyProvider.sol#245-257):
+	- (success,None) = req.callback.call(abi.encodeWithSelector(req.selector,sequence,scaledRandomNumbers,req.context)) (contracts/ScaledEntropyProvider.sol#252)
+Low level call in ETHRejectingContract.receive() (contracts/mocks/ETHRejectingContract.sol#35-53):
+	- (success,returndata) = callbackTarget.call(callbackData) (contracts/mocks/ETHRejectingContract.sol#41)
+Low level call in ETHRejectingContract.callRunJackpot(address,uint256) (contracts/mocks/ETHRejectingContract.sol#59-73):
+	- (success,returnData) = _jackpot.call{value: _value}(abi.encodeWithSignature(runJackpot())) (contracts/mocks/ETHRejectingContract.sol#63-65)
+Low level call in EntropyMock.triggerCallback(uint64,address,bytes32) (contracts/mocks/EntropyMock.sol#56-85):
+	- (success,returnData) = pending.consumer.call(abi.encodeWithSignature(_entropyCallback(uint64,address,bytes32),sequence,provider,randomNumber)) (contracts/mocks/EntropyMock.sol#65-67)
+Low level call in ReentrantUSDCMock._executeCallback() (contracts/mocks/ReentrantUSDCMock.sol#119-130):
+	- (success,returndata) = callbackTarget.call(callbackData) (contracts/mocks/ReentrantUSDCMock.sol#120)
+Low level call in ScaledEntropyProviderMock.randomnessCallback(uint256[][]) (contracts/mocks/ScaledEntropyProviderMock.sol#54-67):
+	- (success,returnData) = callback.call(abi.encodeWithSelector(selector,bytes32(uint256(1)),_randomNumbers,)) (contracts/mocks/ScaledEntropyProviderMock.sol#55)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#low-level-calls
+
+INFO:Detectors:
+Function EIP712._EIP712Name() (node_modules/@openzeppelin/contracts/utils/cryptography/EIP712.sol#146-148) is not in mixedCase
+Function EIP712._EIP712Version() (node_modules/@openzeppelin/contracts/utils/cryptography/EIP712.sol#157-159) is not in mixedCase
+Function IEntropyConsumer._entropyCallback(uint64,address,bytes32) (node_modules/@pythnetwork/entropy-sdk-solidity/IEntropyConsumer.sol#8-18) is not in mixedCase
+Parameter GuaranteedMinimumPayoutCalculator.calculateAndStoreDrawingUserWinnings(uint256,uint256,uint8,uint8,uint256[],uint256[])._drawingId (contracts/GuaranteedMinimumPayoutCalculator.sol#168) is not in mixedCase
+Parameter GuaranteedMinimumPayoutCalculator.calculateAndStoreDrawingUserWinnings(uint256,uint256,uint8,uint8,uint256[],uint256[])._prizePool (contracts/GuaranteedMinimumPayoutCalculator.sol#169) is not in mixedCase
+Parameter GuaranteedMinimumPayoutCalculator.calculateAndStoreDrawingUserWinnings(uint256,uint256,uint8,uint8,uint256[],uint256[])._normalMax (contracts/GuaranteedMinimumPayoutCalculator.sol#170) is not in mixedCase
+Parameter GuaranteedMinimumPayoutCalculator.calculateAndStoreDrawingUserWinnings(uint256,uint256,uint8,uint8,uint256[],uint256[])._bonusballMax (contracts/GuaranteedMinimumPayoutCalculator.sol#171) is not in mixedCase
+Parameter GuaranteedMinimumPayoutCalculator.calculateAndStoreDrawingUserWinnings(uint256,uint256,uint8,uint8,uint256[],uint256[])._uniqueResult (contracts/GuaranteedMinimumPayoutCalculator.sol#172) is not in mixedCase
+Parameter GuaranteedMinimumPayoutCalculator.calculateAndStoreDrawingUserWinnings(uint256,uint256,uint8,uint8,uint256[],uint256[])._dupResult (contracts/GuaranteedMinimumPayoutCalculator.sol#173) is not in mixedCase
+Parameter GuaranteedMinimumPayoutCalculator.setDrawingTierInfo(uint256)._drawingId (contracts/GuaranteedMinimumPayoutCalculator.sol#236) is not in mixedCase
+Parameter GuaranteedMinimumPayoutCalculator.setMinimumPayout(uint256)._minimumPayout (contracts/GuaranteedMinimumPayoutCalculator.sol#263) is not in mixedCase
+Parameter GuaranteedMinimumPayoutCalculator.setMinPayoutTiers(bool[12])._minPayoutTiers (contracts/GuaranteedMinimumPayoutCalculator.sol#284) is not in mixedCase
+Parameter GuaranteedMinimumPayoutCalculator.setPremiumTierMinAllocation(uint256)._premiumTierMinAllocation (contracts/GuaranteedMinimumPayoutCalculator.sol#309) is not in mixedCase
+Parameter GuaranteedMinimumPayoutCalculator.setPremiumTierWeights(uint256[12])._premiumTierWeights (contracts/GuaranteedMinimumPayoutCalculator.sol#333) is not in mixedCase
+Parameter GuaranteedMinimumPayoutCalculator.getTierPayout(uint256,uint256)._drawingId (contracts/GuaranteedMinimumPayoutCalculator.sol#349) is not in mixedCase
+Parameter GuaranteedMinimumPayoutCalculator.getTierPayout(uint256,uint256)._tierId (contracts/GuaranteedMinimumPayoutCalculator.sol#349) is not in mixedCase
+Parameter GuaranteedMinimumPayoutCalculator.getDrawingTierPayouts(uint256)._drawingId (contracts/GuaranteedMinimumPayoutCalculator.sol#360) is not in mixedCase
+Parameter GuaranteedMinimumPayoutCalculator.getDrawingTierInfo(uint256)._drawingId (contracts/GuaranteedMinimumPayoutCalculator.sol#395) is not in mixedCase
+Parameter Jackpot.buyTickets(IJackpot.Ticket[],address,address[],uint256[],bytes32)._tickets (contracts/Jackpot.sol#366) is not in mixedCase
+Parameter Jackpot.buyTickets(IJackpot.Ticket[],address,address[],uint256[],bytes32)._recipient (contracts/Jackpot.sol#367) is not in mixedCase
+Parameter Jackpot.buyTickets(IJackpot.Ticket[],address,address[],uint256[],bytes32)._referrers (contracts/Jackpot.sol#368) is not in mixedCase
+Parameter Jackpot.buyTickets(IJackpot.Ticket[],address,address[],uint256[],bytes32)._referralSplit (contracts/Jackpot.sol#369) is not in mixedCase
+Parameter Jackpot.buyTickets(IJackpot.Ticket[],address,address[],uint256[],bytes32)._source (contracts/Jackpot.sol#370) is not in mixedCase
+Parameter Jackpot.claimWinnings(uint256[])._userTicketIds (contracts/Jackpot.sol#418) is not in mixedCase
+Parameter Jackpot.lpDeposit(uint256)._amountToDeposit (contracts/Jackpot.sol#477) is not in mixedCase
+Parameter Jackpot.initiateWithdraw(uint256)._amountToWithdrawInShares (contracts/Jackpot.sol#506) is not in mixedCase
+Parameter Jackpot.emergencyRefundTickets(uint256[])._userTicketIds (contracts/Jackpot.sol#581) is not in mixedCase
+Parameter Jackpot.scaledEntropyCallback(bytes32,uint256[][],bytes)._randomNumbers (contracts/Jackpot.sol#719) is not in mixedCase
+Parameter Jackpot.initialize(IERC20,IJackpotLPManager,IJackpotTicketNFT,IScaledEntropyProvider,IPayoutCalculator)._usdc (contracts/Jackpot.sol#777) is not in mixedCase
+Parameter Jackpot.initialize(IERC20,IJackpotLPManager,IJackpotTicketNFT,IScaledEntropyProvider,IPayoutCalculator)._jackpotLPManager (contracts/Jackpot.sol#778) is not in mixedCase
+Parameter Jackpot.initialize(IERC20,IJackpotLPManager,IJackpotTicketNFT,IScaledEntropyProvider,IPayoutCalculator)._jackpotNFT (contracts/Jackpot.sol#779) is not in mixedCase
+Parameter Jackpot.initialize(IERC20,IJackpotLPManager,IJackpotTicketNFT,IScaledEntropyProvider,IPayoutCalculator)._entropy (contracts/Jackpot.sol#780) is not in mixedCase
+Parameter Jackpot.initialize(IERC20,IJackpotLPManager,IJackpotTicketNFT,IScaledEntropyProvider,IPayoutCalculator)._payoutCalculator (contracts/Jackpot.sol#781) is not in mixedCase
+Parameter Jackpot.initializeLPDeposits(uint256)._governancePoolCap (contracts/Jackpot.sol#820) is not in mixedCase
+Parameter Jackpot.initializeJackpot(uint256)._initialDrawingTime (contracts/Jackpot.sol#852) is not in mixedCase
+Parameter Jackpot.setNormalBallMax(uint8)._normalBallMax (contracts/Jackpot.sol#886) is not in mixedCase
+Parameter Jackpot.setProtocolFeeThreshold(uint256)._protocolFeeThreshold (contracts/Jackpot.sol#905) is not in mixedCase
+Parameter Jackpot.setProtocolFee(uint256)._protocolFee (contracts/Jackpot.sol#923) is not in mixedCase
+Parameter Jackpot.setGovernancePoolCap(uint256)._governancePoolCap (contracts/Jackpot.sol#946) is not in mixedCase
+Parameter Jackpot.setDrawingDurationInSeconds(uint256)._drawingDurationInSeconds (contracts/Jackpot.sol#969) is not in mixedCase
+Parameter Jackpot.setBonusballMin(uint8)._bonusballMin (contracts/Jackpot.sol#990) is not in mixedCase
+Parameter Jackpot.setLpEdgeTarget(uint256)._lpEdgeTarget (contracts/Jackpot.sol#1012) is not in mixedCase
+Parameter Jackpot.setReserveRatio(uint256)._reserveRatio (contracts/Jackpot.sol#1036) is not in mixedCase
+Parameter Jackpot.setReferralFee(uint256)._referralFee (contracts/Jackpot.sol#1059) is not in mixedCase
+Parameter Jackpot.setReferralWinShare(uint256)._referralWinShare (contracts/Jackpot.sol#1080) is not in mixedCase
+Parameter Jackpot.setProtocolFeeAddress(address)._protocolFeeAddress (contracts/Jackpot.sol#1101) is not in mixedCase
+Parameter Jackpot.setTicketPrice(uint256)._ticketPrice (contracts/Jackpot.sol#1127) is not in mixedCase
+Parameter Jackpot.setMaxReferrers(uint256)._maxReferrers (contracts/Jackpot.sol#1149) is not in mixedCase
+Parameter Jackpot.setPayoutCalculator(IPayoutCalculator)._payoutCalculator (contracts/Jackpot.sol#1171) is not in mixedCase
+Parameter Jackpot.setEntropy(IScaledEntropyProvider)._entropy (contracts/Jackpot.sol#1193) is not in mixedCase
+Parameter Jackpot.setEntropyBaseGasLimit(uint32)._entropyBaseGasLimit (contracts/Jackpot.sol#1211) is not in mixedCase
+Parameter Jackpot.setEntropyVariableGasLimit(uint32)._entropyVariableGasLimit (contracts/Jackpot.sol#1229) is not in mixedCase
+Parameter Jackpot.getDrawingState(uint256)._drawingId (contracts/Jackpot.sol#1362) is not in mixedCase
+Parameter Jackpot.getReferralScheme(bytes32)._referralSchemeId (contracts/Jackpot.sol#1372) is not in mixedCase
+Parameter Jackpot.checkIfTicketsBought(uint256,IJackpot.Ticket[])._drawingId (contracts/Jackpot.sol#1383) is not in mixedCase
+Parameter Jackpot.checkIfTicketsBought(uint256,IJackpot.Ticket[])._tickets (contracts/Jackpot.sol#1383) is not in mixedCase
+Parameter Jackpot.getSubsetCount(uint256,uint8[],uint8)._drawingId (contracts/Jackpot.sol#1401) is not in mixedCase
+Parameter Jackpot.getSubsetCount(uint256,uint8[],uint8)._normals (contracts/Jackpot.sol#1401) is not in mixedCase
+Parameter Jackpot.getSubsetCount(uint256,uint8[],uint8)._bonusball (contracts/Jackpot.sol#1401) is not in mixedCase
+Parameter Jackpot.getUnpackedTicket(uint256,uint256)._drawingId (contracts/Jackpot.sol#1422) is not in mixedCase
+Parameter Jackpot.getUnpackedTicket(uint256,uint256)._packedTicket (contracts/Jackpot.sol#1422) is not in mixedCase
+Parameter Jackpot.getTicketTierIds(uint256[])._ticketIds (contracts/Jackpot.sol#1438) is not in mixedCase
+Parameter JackpotBridgeManager.buyTickets(IJackpot.Ticket[],address,address[],uint256[],bytes32)._tickets (contracts/JackpotBridgeManager.sol#167) is not in mixedCase
+Parameter JackpotBridgeManager.buyTickets(IJackpot.Ticket[],address,address[],uint256[],bytes32)._recipient (contracts/JackpotBridgeManager.sol#168) is not in mixedCase
+Parameter JackpotBridgeManager.buyTickets(IJackpot.Ticket[],address,address[],uint256[],bytes32)._referrers (contracts/JackpotBridgeManager.sol#169) is not in mixedCase
+Parameter JackpotBridgeManager.buyTickets(IJackpot.Ticket[],address,address[],uint256[],bytes32)._referralSplitBps (contracts/JackpotBridgeManager.sol#170) is not in mixedCase
+Parameter JackpotBridgeManager.buyTickets(IJackpot.Ticket[],address,address[],uint256[],bytes32)._source (contracts/JackpotBridgeManager.sol#171) is not in mixedCase
+Parameter JackpotBridgeManager.claimWinnings(uint256[],JackpotBridgeManager.RelayTxData,bytes)._userTicketIds (contracts/JackpotBridgeManager.sol#225) is not in mixedCase
+Parameter JackpotBridgeManager.claimWinnings(uint256[],JackpotBridgeManager.RelayTxData,bytes)._bridgeDetails (contracts/JackpotBridgeManager.sol#225) is not in mixedCase
+Parameter JackpotBridgeManager.claimWinnings(uint256[],JackpotBridgeManager.RelayTxData,bytes)._signature (contracts/JackpotBridgeManager.sol#225) is not in mixedCase
+Parameter JackpotBridgeManager.claimTickets(uint256[],address,bytes)._ticketIds (contracts/JackpotBridgeManager.sol#268) is not in mixedCase
+Parameter JackpotBridgeManager.claimTickets(uint256[],address,bytes)._recipient (contracts/JackpotBridgeManager.sol#268) is not in mixedCase
+Parameter JackpotBridgeManager.claimTickets(uint256[],address,bytes)._signature (contracts/JackpotBridgeManager.sol#268) is not in mixedCase
+Parameter JackpotBridgeManager.createClaimWinningsEIP712Hash(uint256[],JackpotBridgeManager.RelayTxData)._userTicketIds (contracts/JackpotBridgeManager.sol#292) is not in mixedCase
+Parameter JackpotBridgeManager.createClaimWinningsEIP712Hash(uint256[],JackpotBridgeManager.RelayTxData)._bridgeDetails (contracts/JackpotBridgeManager.sol#292) is not in mixedCase
+Parameter JackpotBridgeManager.createClaimTicketEIP712Hash(uint256[],address)._ticketIds (contracts/JackpotBridgeManager.sol#306) is not in mixedCase
+Parameter JackpotBridgeManager.createClaimTicketEIP712Hash(uint256[],address)._recipient (contracts/JackpotBridgeManager.sol#306) is not in mixedCase
+Parameter JackpotBridgeManager.getUserTickets(address,uint256)._user (contracts/JackpotBridgeManager.sol#322) is not in mixedCase
+Parameter JackpotBridgeManager.getUserTickets(address,uint256)._drawingId (contracts/JackpotBridgeManager.sol#322) is not in mixedCase
+Parameter JackpotLPManager.processDeposit(uint256,address,uint256)._drawingId (contracts/JackpotLPManager.sol#180) is not in mixedCase
+Parameter JackpotLPManager.processDeposit(uint256,address,uint256)._lpAddress (contracts/JackpotLPManager.sol#180) is not in mixedCase
+Parameter JackpotLPManager.processDeposit(uint256,address,uint256)._amount (contracts/JackpotLPManager.sol#180) is not in mixedCase
+Parameter JackpotLPManager.processInitiateWithdraw(uint256,address,uint256)._drawingId (contracts/JackpotLPManager.sol#219) is not in mixedCase
+Parameter JackpotLPManager.processInitiateWithdraw(uint256,address,uint256)._lpAddress (contracts/JackpotLPManager.sol#219) is not in mixedCase
+Parameter JackpotLPManager.processInitiateWithdraw(uint256,address,uint256)._amountToWithdrawInShares (contracts/JackpotLPManager.sol#219) is not in mixedCase
+Parameter JackpotLPManager.processFinalizeWithdraw(uint256,address)._drawingId (contracts/JackpotLPManager.sol#256) is not in mixedCase
+Parameter JackpotLPManager.processFinalizeWithdraw(uint256,address)._lpAddress (contracts/JackpotLPManager.sol#256) is not in mixedCase
+Parameter JackpotLPManager.emergencyWithdrawLP(uint256,address)._drawingId (contracts/JackpotLPManager.sol#291) is not in mixedCase
+Parameter JackpotLPManager.emergencyWithdrawLP(uint256,address)._user (contracts/JackpotLPManager.sol#291) is not in mixedCase
+Parameter JackpotLPManager.processDrawingSettlement(uint256,uint256,uint256,uint256)._drawingId (contracts/JackpotLPManager.sol#372) is not in mixedCase
+Parameter JackpotLPManager.processDrawingSettlement(uint256,uint256,uint256,uint256)._lpEarnings (contracts/JackpotLPManager.sol#373) is not in mixedCase
+Parameter JackpotLPManager.processDrawingSettlement(uint256,uint256,uint256,uint256)._userWinnings (contracts/JackpotLPManager.sol#374) is not in mixedCase
+Parameter JackpotLPManager.processDrawingSettlement(uint256,uint256,uint256,uint256)._protocolFeeAmount (contracts/JackpotLPManager.sol#375) is not in mixedCase
+Parameter JackpotLPManager.initializeDrawingLP(uint256,uint256)._drawingId (contracts/JackpotLPManager.sol#408) is not in mixedCase
+Parameter JackpotLPManager.initializeDrawingLP(uint256,uint256)._initialLPValue (contracts/JackpotLPManager.sol#408) is not in mixedCase
+Parameter JackpotLPManager.setLPPoolCap(uint256,uint256)._drawingId (contracts/JackpotLPManager.sol#431) is not in mixedCase
+Parameter JackpotLPManager.setLPPoolCap(uint256,uint256)._lpPoolCap (contracts/JackpotLPManager.sol#431) is not in mixedCase
+Parameter JackpotLPManager.getDrawingAccumulator(uint256)._drawingId (contracts/JackpotLPManager.sol#447) is not in mixedCase
+Parameter JackpotLPManager.getLpInfo(address)._lpAddress (contracts/JackpotLPManager.sol#457) is not in mixedCase
+Parameter JackpotLPManager.getLPValueBreakdown(address)._lpAddress (contracts/JackpotLPManager.sol#486) is not in mixedCase
+Parameter JackpotLPManager.getLPDrawingState(uint256)._drawingId (contracts/JackpotLPManager.sol#514) is not in mixedCase
+Parameter JackpotTicketNFT.mintTicket(address,uint256,uint256,uint256,bytes32)._recipient (contracts/JackpotTicketNFT.sol#113) is not in mixedCase
+Parameter JackpotTicketNFT.mintTicket(address,uint256,uint256,uint256,bytes32)._ticketId (contracts/JackpotTicketNFT.sol#114) is not in mixedCase
+Parameter JackpotTicketNFT.mintTicket(address,uint256,uint256,uint256,bytes32)._drawingId (contracts/JackpotTicketNFT.sol#115) is not in mixedCase
+Parameter JackpotTicketNFT.mintTicket(address,uint256,uint256,uint256,bytes32)._packedTicket (contracts/JackpotTicketNFT.sol#116) is not in mixedCase
+Parameter JackpotTicketNFT.mintTicket(address,uint256,uint256,uint256,bytes32)._referralScheme (contracts/JackpotTicketNFT.sol#117) is not in mixedCase
+Parameter JackpotTicketNFT.burnTicket(uint256)._ticketId (contracts/JackpotTicketNFT.sol#128) is not in mixedCase
+Parameter JackpotTicketNFT.getUserTickets(address,uint256)._userAddress (contracts/JackpotTicketNFT.sol#136) is not in mixedCase
+Parameter JackpotTicketNFT.getUserTickets(address,uint256)._drawingId (contracts/JackpotTicketNFT.sol#136) is not in mixedCase
+Parameter JackpotTicketNFT.getTicketInfo(uint256)._ticketId (contracts/JackpotTicketNFT.sol#146) is not in mixedCase
+Parameter JackpotTicketNFT.getExtendedTicketInfo(uint256)._ticketId (contracts/JackpotTicketNFT.sol#150) is not in mixedCase
+Parameter ScaledEntropyProvider.requestAndCallbackScaledRandomness(uint32,IScaledEntropyProvider.SetRequest[],bytes4,bytes)._gasLimit (contracts/ScaledEntropyProvider.sol#134) is not in mixedCase
+Parameter ScaledEntropyProvider.requestAndCallbackScaledRandomness(uint32,IScaledEntropyProvider.SetRequest[],bytes4,bytes)._requests (contracts/ScaledEntropyProvider.sol#135) is not in mixedCase
+Parameter ScaledEntropyProvider.requestAndCallbackScaledRandomness(uint32,IScaledEntropyProvider.SetRequest[],bytes4,bytes)._selector (contracts/ScaledEntropyProvider.sol#136) is not in mixedCase
+Parameter ScaledEntropyProvider.requestAndCallbackScaledRandomness(uint32,IScaledEntropyProvider.SetRequest[],bytes4,bytes)._context (contracts/ScaledEntropyProvider.sol#137) is not in mixedCase
+Parameter ScaledEntropyProvider.getFee(uint32)._gasLimit (contracts/ScaledEntropyProvider.sol#159) is not in mixedCase
+Parameter ScaledEntropyProvider.setEntropyProvider(address)._entropyProvider (contracts/ScaledEntropyProvider.sol#212) is not in mixedCase
+Parameter TicketComboTracker.init(TicketComboTracker.Tracker,uint8,uint8,uint8)._normalMax (contracts/lib/TicketComboTracker.sol#49) is not in mixedCase
+Parameter TicketComboTracker.init(TicketComboTracker.Tracker,uint8,uint8,uint8)._bonusballMax (contracts/lib/TicketComboTracker.sol#50) is not in mixedCase
+Parameter TicketComboTracker.init(TicketComboTracker.Tracker,uint8,uint8,uint8)._normalTiers (contracts/lib/TicketComboTracker.sol#51) is not in mixedCase
+Parameter TicketComboTracker.toNormalsBitVector(uint8[],uint256)._set (contracts/lib/TicketComboTracker.sol#74) is not in mixedCase
+Parameter TicketComboTracker.toNormalsBitVector(uint8[],uint256)._maxNormalBall (contracts/lib/TicketComboTracker.sol#75) is not in mixedCase
+Parameter TicketComboTracker.insert(TicketComboTracker.Tracker,uint8[],uint8)._tracker (contracts/lib/TicketComboTracker.sol#113) is not in mixedCase
+Parameter TicketComboTracker.insert(TicketComboTracker.Tracker,uint8[],uint8)._normalBalls (contracts/lib/TicketComboTracker.sol#114) is not in mixedCase
+Parameter TicketComboTracker.insert(TicketComboTracker.Tracker,uint8[],uint8)._bonusball (contracts/lib/TicketComboTracker.sol#115) is not in mixedCase
+Parameter TicketComboTracker.countTierMatchesWithBonusball(TicketComboTracker.Tracker,uint8[],uint8)._tracker (contracts/lib/TicketComboTracker.sol#251) is not in mixedCase
+Parameter TicketComboTracker.countTierMatchesWithBonusball(TicketComboTracker.Tracker,uint8[],uint8)._normalBalls (contracts/lib/TicketComboTracker.sol#252) is not in mixedCase
+Parameter TicketComboTracker.countTierMatchesWithBonusball(TicketComboTracker.Tracker,uint8[],uint8)._bonusball (contracts/lib/TicketComboTracker.sol#253) is not in mixedCase
+Parameter TicketComboTracker.isDuplicate(TicketComboTracker.Tracker,uint8[],uint8)._tracker (contracts/lib/TicketComboTracker.sol#289) is not in mixedCase
+Parameter TicketComboTracker.isDuplicate(TicketComboTracker.Tracker,uint8[],uint8)._normalBalls (contracts/lib/TicketComboTracker.sol#290) is not in mixedCase
+Parameter TicketComboTracker.isDuplicate(TicketComboTracker.Tracker,uint8[],uint8)._bonusball (contracts/lib/TicketComboTracker.sol#291) is not in mixedCase
+Parameter TicketComboTracker.unpackTicket(uint256,uint8)._packedTicket (contracts/lib/TicketComboTracker.sol#325) is not in mixedCase
+Parameter TicketComboTracker.unpackTicket(uint256,uint8)._normalMax (contracts/lib/TicketComboTracker.sol#326) is not in mixedCase
+Parameter UintCasts.toUint8(uint256)._value (contracts/lib/UintCasts.sol#29) is not in mixedCase
+Parameter UintCasts.toUint8Array(uint256[])._values (contracts/lib/UintCasts.sol#39) is not in mixedCase
+Parameter ETHRejectingContract.setRejectETH(bool)._reject (contracts/mocks/ETHRejectingContract.sol#20) is not in mixedCase
+Parameter ETHRejectingContract.setCallbackTarget(address)._callbackTarget (contracts/mocks/ETHRejectingContract.sol#24) is not in mixedCase
+Parameter ETHRejectingContract.setCallbackData(bytes)._callbackData (contracts/mocks/ETHRejectingContract.sol#28) is not in mixedCase
+Parameter ETHRejectingContract.callRunJackpot(address,uint256)._jackpot (contracts/mocks/ETHRejectingContract.sol#60) is not in mixedCase
+Parameter ETHRejectingContract.callRunJackpot(address,uint256)._value (contracts/mocks/ETHRejectingContract.sol#61) is not in mixedCase
+Parameter EntropyCallbackMock.setShouldFail(bool)._shouldFail (contracts/mocks/EntropyCallbackMock.sol#19) is not in mixedCase
+Parameter EntropyCallbackMock.requestAndCallbackScaledRandomness(IScaledEntropyProvider,uint32,IScaledEntropyProvider.SetRequest[],bytes4,bytes)._provider (contracts/mocks/EntropyCallbackMock.sol#24) is not in mixedCase
+Parameter EntropyCallbackMock.requestAndCallbackScaledRandomness(IScaledEntropyProvider,uint32,IScaledEntropyProvider.SetRequest[],bytes4,bytes)._gasLimit (contracts/mocks/EntropyCallbackMock.sol#25) is not in mixedCase
+Parameter EntropyCallbackMock.requestAndCallbackScaledRandomness(IScaledEntropyProvider,uint32,IScaledEntropyProvider.SetRequest[],bytes4,bytes)._requests (contracts/mocks/EntropyCallbackMock.sol#26) is not in mixedCase
+Parameter EntropyCallbackMock.requestAndCallbackScaledRandomness(IScaledEntropyProvider,uint32,IScaledEntropyProvider.SetRequest[],bytes4,bytes)._selector (contracts/mocks/EntropyCallbackMock.sol#27) is not in mixedCase
+Parameter EntropyCallbackMock.requestAndCallbackScaledRandomness(IScaledEntropyProvider,uint32,IScaledEntropyProvider.SetRequest[],bytes4,bytes)._context (contracts/mocks/EntropyCallbackMock.sol#28) is not in mixedCase
+Parameter EntropyMock.setFee(uint128)._fee (contracts/mocks/EntropyMock.sol#92) is not in mixedCase
+Parameter ReentrantUSDCMock.setCallbackTarget(address)._target (contracts/mocks/ReentrantUSDCMock.sol#39) is not in mixedCase
+Parameter ReentrantUSDCMock.setCallbackData(bytes)._data (contracts/mocks/ReentrantUSDCMock.sol#48) is not in mixedCase
+Parameter ReentrantUSDCMock.setMaxCallbacks(uint256)._max (contracts/mocks/ReentrantUSDCMock.sol#72) is not in mixedCase
+Parameter ScaledEntropyProviderMock.requestAndCallbackScaledRandomness(uint32,IScaledEntropyProvider.SetRequest[],bytes4,bytes)._gasLimit (contracts/mocks/ScaledEntropyProviderMock.sol#32) is not in mixedCase
+Parameter ScaledEntropyProviderMock.requestAndCallbackScaledRandomness(uint32,IScaledEntropyProvider.SetRequest[],bytes4,bytes)._setRequests (contracts/mocks/ScaledEntropyProviderMock.sol#33) is not in mixedCase
+Parameter ScaledEntropyProviderMock.requestAndCallbackScaledRandomness(uint32,IScaledEntropyProvider.SetRequest[],bytes4,bytes)._selector (contracts/mocks/ScaledEntropyProviderMock.sol#34) is not in mixedCase
+Parameter ScaledEntropyProviderMock.requestAndCallbackScaledRandomness(uint32,IScaledEntropyProvider.SetRequest[],bytes4,bytes)._context (contracts/mocks/ScaledEntropyProviderMock.sol#35) is not in mixedCase
+Parameter ScaledEntropyProviderMock.randomnessCallback(uint256[][])._randomNumbers (contracts/mocks/ScaledEntropyProviderMock.sol#54) is not in mixedCase
+Parameter ScaledEntropyProviderMock.getFee(uint32)._gasLimit (contracts/mocks/ScaledEntropyProviderMock.sol#69) is not in mixedCase
+Parameter ScaledEntropyProviderMock.getPendingRequest(uint64)._requestId (contracts/mocks/ScaledEntropyProviderMock.sol#74) is not in mixedCase
+Parameter TicketComboTrackerTester.init(uint8,uint8,uint8)._normalMax (contracts/mocks/TicketComboTrackerTester.sol#12) is not in mixedCase
+Parameter TicketComboTrackerTester.init(uint8,uint8,uint8)._bonusballMax (contracts/mocks/TicketComboTrackerTester.sol#12) is not in mixedCase
+Parameter TicketComboTrackerTester.init(uint8,uint8,uint8)._normalTiers (contracts/mocks/TicketComboTrackerTester.sol#12) is not in mixedCase
+Parameter TicketComboTrackerTester.toNormalsBitVector(uint8[],uint256)._set (contracts/mocks/TicketComboTrackerTester.sol#50) is not in mixedCase
+Parameter TicketComboTrackerTester.toNormalsBitVector(uint8[],uint256)._maxNormalBall (contracts/mocks/TicketComboTrackerTester.sol#50) is not in mixedCase
+Parameter TicketComboTrackerTester.isDuplicate(uint8[],uint8)._normalBalls (contracts/mocks/TicketComboTrackerTester.sol#54) is not in mixedCase
+Parameter TicketComboTrackerTester.isDuplicate(uint8[],uint8)._bonusball (contracts/mocks/TicketComboTrackerTester.sol#54) is not in mixedCase
+Parameter TicketComboTrackerTester.unpackTicket(uint256,uint8)._packedTicket (contracts/mocks/TicketComboTrackerTester.sol#58) is not in mixedCase
+Parameter TicketComboTrackerTester.unpackTicket(uint256,uint8)._normalMax (contracts/mocks/TicketComboTrackerTester.sol#58) is not in mixedCase
+Parameter LibBit.countZeroBytes.asm_0.czb().x__countZeroBytes_asm_0_czb (node_modules/solady/src/utils/LibBit.sol#99) is not in mixedCase
+Parameter LibBit.countZeroBytesCalldata.asm_0.czb().x__countZeroBytesCalldata_asm_0_czb (node_modules/solady/src/utils/LibBit.sol#117) is not in mixedCase
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#conformance-to-solidity-naming-conventions
+
+INFO:Detectors:
+ShortStrings.slitherConstructorConstantVariables() (node_modules/@openzeppelin/contracts/utils/ShortStrings.sol#40-122) uses literals with too many digits:
+	- FALLBACK_SENTINEL = 0x00000000000000000000000000000000000000000000000000000000000000FF (node_modules/@openzeppelin/contracts/utils/ShortStrings.sol#42)
+Math.log2(uint256) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#612-651) uses literals with too many digits:
+	- r = r | byte(uint256,uint256)(x >> r,0x0000010102020202030303030303030300000000000000000000000000000000) (node_modules/@openzeppelin/contracts/utils/math/Math.sol#649)
+LibBit.fls(uint256) (node_modules/solady/src/utils/LibBit.sol#16-28) uses literals with too many digits:
+	- r = r | byte(uint256,uint256)(0x1f & 0x8421084210842108cc6318c6db6d54be >> x >> r,0x0706060506020504060203020504030106050205030304010505030400000000) (node_modules/solady/src/utils/LibBit.sol#25-26)
+LibBit.reverseBytes(uint256) (node_modules/solady/src/utils/LibBit.sol#154-167) uses literals with too many digits:
+	- m0 = 0x100000000000000000000000000000001 * (~ toUint(x == uint256(0)) >> 192) (node_modules/solady/src/utils/LibBit.sol#157)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#too-many-digits
+
+INFO:Detectors:
+JackpotLPManager.jackpot (contracts/JackpotLPManager.sol#107) should be immutable 
+MockDepository.usdc (contracts/mocks/MockDepository.sol#17) should be immutable 
+ScaledEntropyProvider.entropy (contracts/ScaledEntropyProvider.sol#69) should be immutable 
+ScaledEntropyProviderMock.callback (contracts/mocks/ScaledEntropyProviderMock.sol#18) should be immutable 
+ScaledEntropyProviderMock.fee (contracts/mocks/ScaledEntropyProviderMock.sol#17) should be immutable 
+ScaledEntropyProviderMock.selector (contracts/mocks/ScaledEntropyProviderMock.sol#16) should be immutable 
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#state-variables-that-could-be-declared-immutable
+INFO:Slither:. analyzed (61 contracts with 100 detectors), 374 result(s) found

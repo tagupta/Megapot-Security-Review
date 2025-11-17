@@ -12,11 +12,10 @@ For licensing inquiries: legal@coordinationlabs.com
 
 pragma solidity ^0.8.28;
 
-import { ERC721 } from "solady/src/tokens/ERC721.sol";
+import {ERC721} from "solady/src/tokens/ERC721.sol";
 
-import { IJackpot } from "./interfaces/IJackpot.sol";
-import { IJackpotTicketNFT } from "./interfaces/IJackpotTicketNFT.sol";
-
+import {IJackpot} from "./interfaces/IJackpot.sol";
+import {IJackpotTicketNFT} from "./interfaces/IJackpotTicketNFT.sol";
 
 /**
  * @title JackpotTicketNFT
@@ -29,7 +28,6 @@ import { IJackpotTicketNFT } from "./interfaces/IJackpotTicketNFT.sol";
  *      - Integration with Jackpot contract for minting and burning
  */
 contract JackpotTicketNFT is ERC721, IJackpotTicketNFT {
-
     // =============================================================
     //                           STRUCTS
     // =============================================================
@@ -116,11 +114,8 @@ contract JackpotTicketNFT is ERC721, IJackpotTicketNFT {
         uint256 _packedTicket,
         bytes32 _referralScheme
     ) external onlyJackpot {
-        tickets[_ticketId] = TrackedTicket({
-            drawingId: _drawingId,
-            packedTicket: _packedTicket,
-            referralScheme: _referralScheme
-        });
+        tickets[_ticketId] =
+            TrackedTicket({drawingId: _drawingId, packedTicket: _packedTicket, referralScheme: _referralScheme});
 
         _mint(_recipient, _ticketId);
     }
@@ -133,9 +128,14 @@ contract JackpotTicketNFT is ERC721, IJackpotTicketNFT {
     //                       VIEW FUNCTIONS
     // =============================================================
 
-    function getUserTickets(address _userAddress, uint256 _drawingId) external view returns (ExtendedTrackedTicket[] memory) {
+    function getUserTickets(address _userAddress, uint256 _drawingId)
+        external
+        view
+        returns (ExtendedTrackedTicket[] memory)
+    {
         UserTickets storage userDrawingTickets = userTickets[_userAddress][_drawingId];
-        ExtendedTrackedTicket[] memory userTicketsList = new ExtendedTrackedTicket[](userDrawingTickets.totalTicketsBought);
+        ExtendedTrackedTicket[] memory userTicketsList =
+            new ExtendedTrackedTicket[](userDrawingTickets.totalTicketsBought);
         for (uint256 i = 0; i < userDrawingTickets.totalTicketsBought; i++) {
             uint256 ticketId = userDrawingTickets.ticketIds[i];
             userTicketsList[i] = _getExtendedTicketInfo(ticketId);
@@ -150,7 +150,7 @@ contract JackpotTicketNFT is ERC721, IJackpotTicketNFT {
     function getExtendedTicketInfo(uint256 _ticketId) external view returns (ExtendedTrackedTicket memory) {
         return _getExtendedTicketInfo(_ticketId);
     }
-    
+
     function name() public pure override returns (string memory) {
         return "Jackpot";
     }
@@ -159,15 +159,15 @@ contract JackpotTicketNFT is ERC721, IJackpotTicketNFT {
         return "JACKPOT";
     }
 
-    function tokenURI(uint256 /* tokenId */) public pure override returns (string memory) {
+    function tokenURI(uint256 /* tokenId */ ) public pure override returns (string memory) {
         return "";
     }
 
     // =============================================================
     //                       INTERNAL FUNCTIONS
     // =============================================================
-
-    function _beforeTokenTransfer(address _from, address /* _to */, uint256 _tokenId) internal override {
+    //@note OK
+    function _beforeTokenTransfer(address _from, address, /* _to */ uint256 _tokenId) internal override {
         if (_from != address(0)) {
             TrackedTicket memory ticketInfo = tickets[_tokenId];
             UserTickets storage fromTickets = userTickets[_from][ticketInfo.drawingId];
@@ -183,8 +183,9 @@ contract JackpotTicketNFT is ERC721, IJackpotTicketNFT {
             fromTickets.totalTicketsBought -= 1;
         }
     }
+    //@note OK
 
-    function _afterTokenTransfer(address /* _from */, address _to, uint256 _tokenId) internal override {
+    function _afterTokenTransfer(address, /* _from */ address _to, uint256 _tokenId) internal override {
         if (_to != address(0)) {
             TrackedTicket memory ticketInfo = tickets[_tokenId];
             UserTickets storage toTickets = userTickets[_to][ticketInfo.drawingId];
@@ -196,7 +197,8 @@ contract JackpotTicketNFT is ERC721, IJackpotTicketNFT {
     }
 
     function _getExtendedTicketInfo(uint256 _ticketId) internal view returns (ExtendedTrackedTicket memory) {
-        (uint8[] memory normals, uint8 bonusball) = jackpot.getUnpackedTicket(tickets[_ticketId].drawingId, tickets[_ticketId].packedTicket);
+        (uint8[] memory normals, uint8 bonusball) =
+            jackpot.getUnpackedTicket(tickets[_ticketId].drawingId, tickets[_ticketId].packedTicket);
         return ExtendedTrackedTicket({
             ticketId: _ticketId,
             ticket: tickets[_ticketId],

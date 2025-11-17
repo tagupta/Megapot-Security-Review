@@ -1,0 +1,14 @@
+[profile.default]
+libs = ["lib"]
+via-ir = true
+optimizer = true
+optimizer_runs = 4294967295
+
+[fuzz]
+runs = 100_000
+
+remappings = [
+    'forge-std/=lib/forge-std/src',
+    'solady/=lib/solady/',
+    '@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/',
+    '@pythnetwork/entropy-sdk-solidity/=node_modules/@pythnetwork/entropy-sdk-solidity']

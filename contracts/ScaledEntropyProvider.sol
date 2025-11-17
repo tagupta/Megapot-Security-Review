@@ -12,12 +12,12 @@ For licensing inquiries: legal@coordinationlabs.com
 
 pragma solidity ^0.8.28;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { IEntropyConsumer } from "@pythnetwork/entropy-sdk-solidity/IEntropyConsumer.sol";
-import { IEntropyV2 } from "@pythnetwork/entropy-sdk-solidity/IEntropyV2.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IEntropyConsumer} from "@pythnetwork/entropy-sdk-solidity/IEntropyConsumer.sol";
+import {IEntropyV2} from "@pythnetwork/entropy-sdk-solidity/IEntropyV2.sol";
 
-import { FisherYatesRejection } from "./lib/FisherYatesWithRejection.sol";
-import { IScaledEntropyProvider } from "./interfaces/IScaledEntropyProvider.sol";
+import {FisherYatesRejection} from "./lib/FisherYatesWithRejection.sol";
+import {IScaledEntropyProvider} from "./interfaces/IScaledEntropyProvider.sol";
 
 /**
  * @title ScaledEntropyProvider
@@ -52,6 +52,7 @@ contract ScaledEntropyProvider is Ownable, IScaledEntropyProvider, IEntropyConsu
     // =============================================================
     //                           ERRORS
     // =============================================================
+    //@audit-info unused custom error
     error InvalidCallback();
     error CallbackFailed(bytes4 selector);
     error ZeroAddress();
@@ -66,14 +67,14 @@ contract ScaledEntropyProvider is Ownable, IScaledEntropyProvider, IEntropyConsu
     //                       STATE VARIABLES
     // =============================================================
 
-    IEntropyV2 private entropy;
+    IEntropyV2 private entropy; //@audit-info should have been declared as an immutable variable
     address private entropyProvider;
-    mapping(uint64 => PendingRequest) private pending;
+    mapping(uint64 => PendingRequest) private pending; //Sequence number => Pending Request
 
     // =============================================================
     //                         CONSTRUCTOR
     // =============================================================
-    
+
     /**
      * @notice Initializes the ScaledEntropyProvider with Pyth Network entropy configuration
      * @dev Sets up connections to Pyth Network entropy contract and provider.
@@ -130,16 +131,13 @@ contract ScaledEntropyProvider is Ownable, IScaledEntropyProvider, IEntropyConsu
      * - Fee validation ensures sufficient payment
      * - Request validation prevents invalid random number generation
      */
+    //@note OK
     function requestAndCallbackScaledRandomness(
         uint32 _gasLimit,
         SetRequest[] memory _requests,
-        bytes4 _selector,
+        bytes4 _selector, //jackpot.scaledEntropyCallback()
         bytes memory _context
-    )
-        external
-        payable
-        returns (uint64 sequence)
-    {
+    ) external payable returns (uint64 sequence) {
         // We assume that the caller has already checked that the fee is sufficient
         if (msg.value < getFee(_gasLimit)) revert InsufficientFee();
         if (_selector == bytes4(0)) revert InvalidSelector();
@@ -156,6 +154,7 @@ contract ScaledEntropyProvider is Ownable, IScaledEntropyProvider, IEntropyConsu
      * @param _gasLimit Gas limit for the callback execution
      * @return Fee amount in wei required for the entropy request
      */
+    //@note OK
     function getFee(uint32 _gasLimit) public view returns (uint256) {
         return entropy.getFeeV2(entropyProvider, _gasLimit);
     }
@@ -165,6 +164,7 @@ contract ScaledEntropyProvider is Ownable, IScaledEntropyProvider, IEntropyConsu
      * @dev Provides access to the entropy contract address for integration purposes.
      * @return Address of the entropy contract
      */
+    //@note OK
     function getEntropyContract() external view returns (address) {
         return address(entropy);
     }
@@ -174,6 +174,7 @@ contract ScaledEntropyProvider is Ownable, IScaledEntropyProvider, IEntropyConsu
      * @dev Shows which entropy provider is being used for fee calculations and requests.
      * @return Address of the entropy provider
      */
+    //@note OK
     function getEntropyProvider() external view returns (address) {
         return entropyProvider;
     }
@@ -185,6 +186,7 @@ contract ScaledEntropyProvider is Ownable, IScaledEntropyProvider, IEntropyConsu
      * @param sequence Unique identifier of the entropy request
      * @return PendingRequest struct containing callback details and request parameters
      */
+    //@note OK
     function getPendingRequest(uint64 sequence) external view returns (PendingRequest memory) {
         return pending[sequence];
     }
@@ -209,6 +211,7 @@ contract ScaledEntropyProvider is Ownable, IScaledEntropyProvider, IEntropyConsu
      * - Owner-only access restriction
      * - Zero address validation
      */
+    //@note OK
     function setEntropyProvider(address _entropyProvider) external onlyOwner {
         if (_entropyProvider == address(0)) revert ZeroAddress();
         entropyProvider = _entropyProvider;
@@ -242,44 +245,39 @@ contract ScaledEntropyProvider is Ownable, IScaledEntropyProvider, IEntropyConsu
      * - Uses unbiased sampling methods to prevent statistical attacks
      * - Immediate cleanup prevents replay attacks
      */
-    function entropyCallback(uint64 sequence, address /*provider*/, bytes32 randomNumber) internal override {
+    //@note converts raw entropy to jackpot numbers
+    function entropyCallback(uint64 sequence, address, /*provider*/ bytes32 randomNumber) internal override {
         PendingRequest memory req = pending[sequence];
         if (req.callback == address(0)) revert UnknownSequence();
-        
+
         delete pending[sequence];
 
         uint256[][] memory scaledRandomNumbers = _getScaledRandomness(randomNumber, req.setRequests);
-        (bool success, ) = req.callback.call(abi.encodeWithSelector(req.selector, sequence, scaledRandomNumbers, req.context));
+        (bool success,) =
+            req.callback.call(abi.encodeWithSelector(req.selector, sequence, scaledRandomNumbers, req.context));
         if (!success) revert CallbackFailed(req.selector);
 
         emit EntropyFulfilled(sequence, randomNumber);
         emit ScaledRandomnessDelivered(sequence, req.callback, scaledRandomNumbers.length);
     }
 
-    function _getScaledRandomness(
-        bytes32 _randomNumber,
-        SetRequest[] memory _setRequests
-    )
+    //@note OK
+    function _getScaledRandomness(bytes32 _randomNumber, SetRequest[] memory _setRequests)
         internal
         pure
         returns (uint256[][] memory requestsOutputs)
     {
         requestsOutputs = new uint256[][](_setRequests.length);
-        
+
         for (uint256 i = 0; i < _setRequests.length; i++) {
             if (!_setRequests[i].withReplacement) {
+                //@note without replacement => a random number is unique
                 requestsOutputs[i] = FisherYatesRejection.draw(
-                    _setRequests[i].minRange,
-                    _setRequests[i].maxRange,
-                    _setRequests[i].samples,
-                    uint256(_randomNumber)
+                    _setRequests[i].minRange, _setRequests[i].maxRange, _setRequests[i].samples, uint256(_randomNumber)
                 );
             } else {
                 requestsOutputs[i] = _drawWithReplacement(
-                    _setRequests[i].minRange,
-                    _setRequests[i].maxRange,
-                    _setRequests[i].samples,
-                    uint256(_randomNumber)
+                    _setRequests[i].minRange, _setRequests[i].maxRange, _setRequests[i].samples, uint256(_randomNumber)
                 );
             }
         }
@@ -289,6 +287,7 @@ contract ScaledEntropyProvider is Ownable, IScaledEntropyProvider, IEntropyConsu
         return address(entropy);
     }
 
+    //@note OK
     function _validateRequests(SetRequest[] memory _requests) internal pure {
         if (_requests.length == 0) revert InvalidRequests();
         for (uint256 i = 0; i < _requests.length; i++) {
@@ -311,12 +310,12 @@ contract ScaledEntropyProvider is Ownable, IScaledEntropyProvider, IEntropyConsu
         }
     }
 
-    function _drawWithReplacement(
-        uint256 _minRange,
-        uint256 _maxRange,
-        uint8 _samples,
-        uint256 _randomNumber
-    ) internal pure returns (uint256[] memory) {
+    //@note OK
+    function _drawWithReplacement(uint256 _minRange, uint256 _maxRange, uint8 _samples, uint256 _randomNumber)
+        internal
+        pure
+        returns (uint256[] memory)
+    {
         uint256[] memory result = new uint256[](_samples);
         uint256 range = _maxRange - _minRange + 1;
         uint256 nonce = 0;

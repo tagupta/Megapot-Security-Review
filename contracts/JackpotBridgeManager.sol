@@ -12,18 +12,18 @@ For licensing inquiries: legal@coordinationlabs.com
 
 pragma solidity ^0.8.28;
 
-import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
-import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { Ownable2Step } from "@openzeppelin/contracts/access/Ownable2Step.sol";
-import { ReentrancyGuardTransient } from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import { IJackpot } from "./interfaces/IJackpot.sol";
-import { IJackpotTicketNFT } from "./interfaces/IJackpotTicketNFT.sol";
-import { JackpotErrors } from "./lib/JackpotErrors.sol";
+import {IJackpot} from "./interfaces/IJackpot.sol";
+import {IJackpotTicketNFT} from "./interfaces/IJackpotTicketNFT.sol";
+import {JackpotErrors} from "./lib/JackpotErrors.sol";
 
 /**
  * @title JackpotBridgeManager
@@ -37,7 +37,6 @@ import { JackpotErrors } from "./lib/JackpotErrors.sol";
  *      - Uses reentrancy protection for all external interactions
  */
 contract JackpotBridgeManager is Ownable2Step, ReentrancyGuardTransient, EIP712 {
-
     using SafeERC20 for IERC20;
 
     // =============================================================
@@ -46,7 +45,7 @@ contract JackpotBridgeManager is Ownable2Step, ReentrancyGuardTransient, EIP712 
 
     struct UserTickets {
         uint256 totalTicketsOwned;
-        mapping(uint256 => uint256) ticketIds;
+        mapping(uint256 => uint256) ticketIds; //index => ticketID
     }
 
     struct ClaimWinningsData {
@@ -65,7 +64,9 @@ contract JackpotBridgeManager is Ownable2Step, ReentrancyGuardTransient, EIP712 
     // =============================================================
 
     event TicketsBought(address indexed _recipient, uint256 indexed _drawingId, uint256[] _ticketIds);
-    event WinningsClaimed(address indexed _winner, address indexed _bridgeProvider, uint256[] _ticketIds, uint256 _amount);
+    event WinningsClaimed(
+        address indexed _winner, address indexed _bridgeProvider, uint256[] _ticketIds, uint256 _amount
+    );
     event FundsBridged(address indexed _to, uint256 _amount);
     // =============================================================
     //                      ERRORS
@@ -82,17 +83,16 @@ contract JackpotBridgeManager is Ownable2Step, ReentrancyGuardTransient, EIP712 
     bytes32 public constant CLAIM_WINNINGS_TYPEHASH = keccak256(
         "ClaimWinningsData(uint256[] ticketIds,RelayTxData bridgeDetails)RelayTxData(address approveTo,address to,bytes data)"
     );
-    bytes32 public constant CLAIM_TICKET_TYPEHASH = keccak256(
-        "ClaimTicketData(uint256[] ticketIds,address recipient)"
-    );
+    //@audit-q why there doesn't an struct exist by this name
+    bytes32 public constant CLAIM_TICKET_TYPEHASH = keccak256("ClaimTicketData(uint256[] ticketIds,address recipient)");
     bytes32 public constant RELAY_TYPEHASH = keccak256("RelayTxData(address approveTo,address to,bytes data)");
 
     // =============================================================
     //                      STATE VARIABLES
     // =============================================================
 
-    mapping(address => mapping(uint256 => UserTickets)) public userTickets;
-    mapping(uint256 => address) public ticketOwner;
+    mapping(address => mapping(uint256 => UserTickets)) public userTickets; //@note recipient (owner) => current drawing id
+    mapping(uint256 => address) public ticketOwner; //@note ticketid => owner addres
 
     IJackpot public immutable jackpot;
     IJackpotTicketNFT public immutable jackpotTicketNFT;
@@ -132,7 +132,7 @@ contract JackpotBridgeManager is Ownable2Step, ReentrancyGuardTransient, EIP712 
         jackpotTicketNFT = _jackpotTicketNFT;
         usdc = _usdc;
     }
-    
+
     // =============================================================
     //                      EXTERNAL FUNCTIONS
     // =============================================================
@@ -163,17 +163,14 @@ contract JackpotBridgeManager is Ownable2Step, ReentrancyGuardTransient, EIP712 
      * - Zero address validation for recipient
      * - Ownership tracking for secure claiming
      */
+    //@note OK
     function buyTickets(
-        IJackpot.Ticket[] memory _tickets,
+        IJackpot.Ticket[] memory _tickets, //@note [] normals, bonusball
         address _recipient,
         address[] memory _referrers,
         uint256[] memory _referralSplitBps,
         bytes32 _source
-    )
-        external
-        nonReentrant
-        returns (uint256[] memory)
-    {
+    ) external nonReentrant returns (uint256[] memory) {
         if (_recipient == address(0)) revert JackpotErrors.ZeroAddress();
         uint256 ticketPrice = jackpot.ticketPrice();
         uint256 currentDrawingId = jackpot.currentDrawingId();
@@ -222,7 +219,11 @@ contract JackpotBridgeManager is Ownable2Step, ReentrancyGuardTransient, EIP712 
      * - Balance checks ensure complete fund transfer
      * - Ticket ownership validation prevents unauthorized claims
      */
-    function claimWinnings(uint256[] memory _userTicketIds, RelayTxData memory _bridgeDetails, bytes memory _signature) external nonReentrant {
+    //@note OK
+    function claimWinnings(uint256[] memory _userTicketIds, RelayTxData memory _bridgeDetails, bytes memory _signature)
+        external
+        nonReentrant
+    {
         if (_userTicketIds.length == 0) revert JackpotErrors.NoTicketsToClaim();
 
         bytes32 eipHash = createClaimWinningsEIP712Hash(_userTicketIds, _bridgeDetails);
@@ -234,7 +235,7 @@ contract JackpotBridgeManager is Ownable2Step, ReentrancyGuardTransient, EIP712 
         jackpot.claimWinnings(_userTicketIds);
         uint256 postUSDCBalance = usdc.balanceOf(address(this));
         uint256 claimedAmount = postUSDCBalance - preUSDCBalance;
-
+        //@audit-low i think here ticketowner mapping should be delete as well as userTickets, else there be stale data
         if (claimedAmount == 0) revert InvalidClaimedAmount();
 
         _bridgeFunds(_bridgeDetails, claimedAmount);
@@ -253,7 +254,7 @@ contract JackpotBridgeManager is Ownable2Step, ReentrancyGuardTransient, EIP712 
      * - Recipient must not be zero address
      * - Recipient must not be the bridge manager contract
      * - Signature must be valid and from ticket owner
-     * - Caller must be authorized to execute the transfer
+     * - Caller must be authorized to execute the transfer //note
      * @custom:emits Transfer events from ERC-721 transfers
      * @custom:effects
      * - Removes ticket ownership records from bridge manager
@@ -265,6 +266,7 @@ contract JackpotBridgeManager is Ownable2Step, ReentrancyGuardTransient, EIP712 
      * - Address validation prevents invalid transfers
      * - Ownership validation ensures only owner can transfer
      */
+    //@audit-med causing DOS if users try to call this after claimingWinnings
     function claimTickets(uint256[] memory _ticketIds, address _recipient, bytes memory _signature) external {
         if (_recipient == address(0)) revert JackpotErrors.ZeroAddress();
         if (_recipient == address(this)) revert JackpotErrors.InvalidRecipient();
@@ -273,7 +275,7 @@ contract JackpotBridgeManager is Ownable2Step, ReentrancyGuardTransient, EIP712 
         address signer = ECDSA.recover(eipHash, _signature);
 
         _validateTicketOwnership(_ticketIds, signer);
-        
+
         _updateTicketOwnership(_ticketIds, _recipient);
     }
 
@@ -289,10 +291,18 @@ contract JackpotBridgeManager is Ownable2Step, ReentrancyGuardTransient, EIP712 
      * @param _bridgeDetails Bridge transaction details to include in hash
      * @return bytes32 EIP-712 compliant hash for signature validation
      */
-    function createClaimWinningsEIP712Hash(uint256[] memory _userTicketIds, RelayTxData memory _bridgeDetails) public view returns (bytes32) {
-        bytes32 relayHash = keccak256(abi.encode(RELAY_TYPEHASH, _bridgeDetails.approveTo, _bridgeDetails.to, keccak256(_bridgeDetails.data)));
+    function createClaimWinningsEIP712Hash(uint256[] memory _userTicketIds, RelayTxData memory _bridgeDetails)
+        public
+        view
+        returns (bytes32)
+    {
+        bytes32 relayHash = keccak256(
+            abi.encode(RELAY_TYPEHASH, _bridgeDetails.approveTo, _bridgeDetails.to, keccak256(_bridgeDetails.data))
+        );
 
-        return _hashTypedDataV4(keccak256(abi.encode(CLAIM_WINNINGS_TYPEHASH, keccak256(abi.encodePacked(_userTicketIds)), relayHash)));
+        return _hashTypedDataV4(
+            keccak256(abi.encode(CLAIM_WINNINGS_TYPEHASH, keccak256(abi.encodePacked(_userTicketIds)), relayHash))
+        );
     }
 
     /**
@@ -303,8 +313,14 @@ contract JackpotBridgeManager is Ownable2Step, ReentrancyGuardTransient, EIP712 
      * @param _recipient Destination address to include in hash
      * @return bytes32 EIP-712 compliant hash for signature validation
      */
-    function createClaimTicketEIP712Hash(uint256[] memory _ticketIds, address _recipient) public view returns (bytes32) {
-        return _hashTypedDataV4(keccak256(abi.encode(CLAIM_TICKET_TYPEHASH, keccak256(abi.encodePacked(_ticketIds)), _recipient)));
+    function createClaimTicketEIP712Hash(uint256[] memory _ticketIds, address _recipient)
+        public
+        view
+        returns (bytes32)
+    {
+        return _hashTypedDataV4(
+            keccak256(abi.encode(CLAIM_TICKET_TYPEHASH, keccak256(abi.encodePacked(_ticketIds)), _recipient))
+        );
     }
 
     // =============================================================
@@ -330,7 +346,7 @@ contract JackpotBridgeManager is Ownable2Step, ReentrancyGuardTransient, EIP712 
         }
         return ticketIds;
     }
-    
+
     // =============================================================
     //                      PRIVATE FUNCTIONS
     // =============================================================
@@ -347,17 +363,18 @@ contract JackpotBridgeManager is Ownable2Step, ReentrancyGuardTransient, EIP712 
         // If the route requires a direct transfer to a solver the approval address will be 0 and we will
         // skip approval.
         if (_bridgeDetails.approveTo != address(0)) {
+            //@audit-high if address is somehow turns out to be malicious address, then this address can drain this contract
             usdc.approve(_bridgeDetails.approveTo, _claimedAmount);
         }
 
         uint256 preUSDCBalance = usdc.balanceOf(address(this));
+        //@note try this out
         (bool success,) = _bridgeDetails.to.call(_bridgeDetails.data);
 
         if (!success) revert BridgeFundsFailed();
         uint256 postUSDCBalance = usdc.balanceOf(address(this));
-
         if (preUSDCBalance - postUSDCBalance != _claimedAmount) revert NotAllFundsBridged();
-    
+
         emit FundsBridged(_bridgeDetails.to, _claimedAmount);
     }
 

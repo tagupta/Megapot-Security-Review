@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.28;
 
-import { TicketComboTracker } from "../lib/TicketComboTracker.sol";
+import {TicketComboTracker} from "../lib/TicketComboTracker.sol";
 
 contract TicketComboTrackerTester {
     using TicketComboTracker for TicketComboTracker.Tracker;
@@ -17,17 +17,19 @@ contract TicketComboTrackerTester {
         tracker.insert(normalBalls, bonusball);
     }
 
-    function countTierMatchesWithBonusball(
-        uint8[] memory normalBalls,
-        uint8 bonusball
-    )
+    function countTierMatchesWithBonusball(uint8[] memory normalBalls, uint8 bonusball)
         external
         view
-        returns (uint256, uint256[] memory, uint256[] memory) {
+        returns (uint256, uint256[] memory, uint256[] memory)
+    {
         return tracker.countTierMatchesWithBonusball(normalBalls, bonusball);
     }
 
-    function getComboCount(uint8 bonusball, uint256 combo) external view returns (TicketComboTracker.ComboCount memory) {
+    function getComboCount(uint8 bonusball, uint256 combo)
+        external
+        view
+        returns (TicketComboTracker.ComboCount memory)
+    {
         return tracker.comboCounts[bonusball][combo];
     }
 
@@ -55,7 +57,11 @@ contract TicketComboTrackerTester {
         return tracker.isDuplicate(_normalBalls, _bonusball);
     }
 
-    function unpackTicket(uint256 _packedTicket, uint8 _normalMax) external pure returns (uint8[] memory normalBalls, uint8 bonusball) {
+    function unpackTicket(uint256 _packedTicket, uint8 _normalMax)
+        external
+        pure
+        returns (uint8[] memory normalBalls, uint8 bonusball)
+    {
         return TicketComboTracker.unpackTicket(_packedTicket, _normalMax);
     }
 }
