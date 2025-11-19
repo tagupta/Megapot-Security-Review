@@ -273,8 +273,6 @@ contract ScaledEntropyProviderTest is Test {
         jackpot.claimWinnings(ticketIds);
         uint256 buyerOneAfterBalance = usdcMock.balanceOf(buyerOne);
         assertEq(buyerOneAfterBalance - buyerOneBeforeBalance, 0);
-
-        
     }
 }
 
