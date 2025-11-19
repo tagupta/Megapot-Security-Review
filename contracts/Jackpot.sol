@@ -30,12 +30,12 @@ import {IScaledEntropyProvider} from "./interfaces/IScaledEntropyProvider.sol";
 import {JackpotErrors} from "./lib/JackpotErrors.sol";
 import {TicketComboTracker} from "./lib/TicketComboTracker.sol";
 import {UintCasts} from "./lib/UintCasts.sol";
-
 /**
  * @title Jackpot
  * @notice Main jackpot contract that orchestrates all jackpot operations including ticket purchases, drawings, and prize distribution
  * @dev Implements a decentralized jackpot system with NFT-based tickets, LP-managed prize pools, and provably fair drawings using Pyth Network entropy
  */
+
 contract Jackpot is IJackpot, Ownable2Step, ReentrancyGuardTransient {
     using SafeERC20 for IERC20;
     using UintCasts for uint256;

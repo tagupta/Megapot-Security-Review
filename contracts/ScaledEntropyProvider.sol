@@ -18,7 +18,6 @@ import {IEntropyV2} from "@pythnetwork/entropy-sdk-solidity/IEntropyV2.sol";
 
 import {FisherYatesRejection} from "./lib/FisherYatesWithRejection.sol";
 import {IScaledEntropyProvider} from "./interfaces/IScaledEntropyProvider.sol";
-
 /**
  * @title ScaledEntropyProvider
  * @notice Provides scaled random number generation using Pyth Network entropy with callback functionality

